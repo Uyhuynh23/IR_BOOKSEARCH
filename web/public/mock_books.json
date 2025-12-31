@@ -1,0 +1,238 @@
+[
+  {
+    "id": "book-1",
+    "core_metadata": {
+      "title": "The Aurora Paradox",
+      "subtitle": "Echoes Beyond the Drift",
+      "author": "Lena Ward",
+      "authors": ["Lena Ward"],
+      "publisher": "Nebula Press",
+      "language": "en",
+      "page_count": 384,
+      "format": "Hardcover"
+    },
+    "temporal": {
+      "publication_year": 2020,
+      "publication_date": "2020-05-12",
+      "publication_date_enriched": "2020-05-12"
+    },
+    "categorization": {
+      "genres_cmu": ["Science Fiction", "Adventure", "Space"],
+      "genres_normalized": ["science fiction", "adventure"],
+      "categories_enriched": ["Space Opera", "Exploration"]
+    },
+    "content": {
+      "summary": "A pilot discovers an impossible signal emerging from the edge of known space, pulling her crew into a mystery that blurs physics, memory, and the fabric of reality itself.",
+      "summary_length": 188,
+      "summary_word_count": 31
+    },
+    "identifiers": {
+      "wikipedia_id": "12345",
+      "freebase_id": "fb1",
+      "isbn_13": "9780451489577",
+      "isbn_10": "0451489571"
+    },
+    "quality_signals": {
+      "average_rating": 4.3,
+      "ratings_count": 12450,
+      "maturity_rating": "Teen"
+    },
+    "indexing": {
+      "indexed_at": "2023-08-01T10:15:00Z",
+      "last_updated": "2024-02-14T12:00:00Z",
+      "enrichment_status": "complete",
+      "has_isbn": true,
+      "has_rating": true,
+      "data_completeness_score": 0.92
+    }
+  },
+  {
+    "id": "book-2",
+    "core_metadata": {
+      "title": "Whispers of the Silk Road",
+      "subtitle": "Journeys Across Hidden Empires",
+      "author": "Amir Rahman",
+      "authors": ["Amir Rahman", "Li Mei"],
+      "publisher": "Atlas House",
+      "language": "en",
+      "page_count": 416,
+      "format": "Paperback"
+    },
+    "temporal": {
+      "publication_year": 2016,
+      "publication_date": "2016-11-03",
+      "publication_date_enriched": "2016-11-03"
+    },
+    "categorization": {
+      "genres_cmu": ["Historical", "Adventure"],
+      "genres_normalized": ["history", "adventure"],
+      "categories_enriched": ["Travel", "Cultural Studies"]
+    },
+    "content": {
+      "summary": "Two scholars retrace the Silk Road using forgotten diaries, uncovering a conspiracy that connects ancient cartographers with modern day treasure hunters.",
+      "summary_length": 162,
+      "summary_word_count": 27
+    },
+    "identifiers": {
+      "wikipedia_id": "23456",
+      "freebase_id": "fb2",
+      "isbn_13": "9780143128571",
+      "isbn_10": "0143128574"
+    },
+    "quality_signals": {
+      "average_rating": 4.1,
+      "ratings_count": 8450,
+      "maturity_rating": "Everyone"
+    },
+    "indexing": {
+      "indexed_at": "2023-07-12T09:00:00Z",
+      "last_updated": "2024-01-10T16:00:00Z",
+      "enrichment_status": "complete",
+      "has_isbn": true,
+      "has_rating": true,
+      "data_completeness_score": 0.88
+    }
+  },
+  {
+    "id": "book-3",
+    "core_metadata": {
+      "title": "Algorithmic Seas",
+      "subtitle": "The Ethics of Intelligent Trade",
+      "author": "Priya Desai",
+      "authors": ["Priya Desai"],
+      "publisher": "Circuit Press",
+      "language": "en",
+      "page_count": 296,
+      "format": "eBook"
+    },
+    "temporal": {
+      "publication_year": 2023,
+      "publication_date": "2023-03-18",
+      "publication_date_enriched": "2023-03-18"
+    },
+    "categorization": {
+      "genres_cmu": ["Technology", "Non-fiction"],
+      "genres_normalized": ["technology", "business"],
+      "categories_enriched": ["Ethics", "AI"]
+    },
+    "content": {
+      "summary": "An exploration of how AI-driven markets reshape global trade, questioning who benefits and who is left behind as algorithms set the price of the future.",
+      "summary_length": 170,
+      "summary_word_count": 28
+    },
+    "identifiers": {
+      "wikipedia_id": "34567",
+      "freebase_id": "fb3",
+      "isbn_13": "9780262047954",
+      "isbn_10": "026204795X"
+    },
+    "quality_signals": {
+      "average_rating": 4.6,
+      "ratings_count": 2230,
+      "maturity_rating": "Adult"
+    },
+    "indexing": {
+      "indexed_at": "2024-01-08T08:30:00Z",
+      "last_updated": "2024-04-01T14:10:00Z",
+      "enrichment_status": "complete",
+      "has_isbn": true,
+      "has_rating": true,
+      "data_completeness_score": 0.95
+    }
+  },
+  {
+    "id": "book-4",
+    "core_metadata": {
+      "title": "Garden of Small Miracles",
+      "subtitle": "Letters from a City Balcony",
+      "author": "Lucía Ortega",
+      "authors": ["Lucía Ortega"],
+      "publisher": "Luz Editions",
+      "language": "es",
+      "page_count": 240,
+      "format": "Paperback"
+    },
+    "temporal": {
+      "publication_year": 2019,
+      "publication_date": "2019-08-22",
+      "publication_date_enriched": "2019-08-22"
+    },
+    "categorization": {
+      "genres_cmu": ["Memoir", "Lifestyle"],
+      "genres_normalized": ["memoir", "lifestyle"],
+      "categories_enriched": ["Urban Gardening", "Wellness"]
+    },
+    "content": {
+      "summary": "A series of letters chronicles how a cramped balcony garden transforms a neighborhood, revealing the quiet resilience of city dwellers.",
+      "summary_length": 150,
+      "summary_word_count": 25
+    },
+    "identifiers": {
+      "wikipedia_id": "45678",
+      "freebase_id": "fb4",
+      "isbn_13": "9788490629040",
+      "isbn_10": "849062904X"
+    },
+    "quality_signals": {
+      "average_rating": 3.9,
+      "ratings_count": 3100,
+      "maturity_rating": "Everyone"
+    },
+    "indexing": {
+      "indexed_at": "2023-05-10T11:45:00Z",
+      "last_updated": "2024-03-02T13:15:00Z",
+      "enrichment_status": "complete",
+      "has_isbn": true,
+      "has_rating": true,
+      "data_completeness_score": 0.81
+    }
+  },
+  {
+    "id": "book-5",
+    "core_metadata": {
+      "title": "Shadows Over the Delta",
+      "subtitle": "A Detective's Last Case",
+      "author": "Huy Tran",
+      "authors": ["Huy Tran"],
+      "publisher": "Mekong Noir",
+      "language": "vi",
+      "page_count": 352,
+      "format": "Hardcover"
+    },
+    "temporal": {
+      "publication_year": 2021,
+      "publication_date": "2021-10-05",
+      "publication_date_enriched": "2021-10-05"
+    },
+    "categorization": {
+      "genres_cmu": ["Mystery", "Thriller"],
+      "genres_normalized": ["mystery", "thriller"],
+      "categories_enriched": ["Crime", "Detective"]
+    },
+    "content": {
+      "summary": "A retiring detective in the Mekong Delta uncovers a string of linked disappearances, forcing him to confront the ghosts of his earliest cases.",
+      "summary_length": 159,
+      "summary_word_count": 27
+    },
+    "identifiers": {
+      "wikipedia_id": "56789",
+      "freebase_id": "fb5",
+      "isbn_13": "9786047751234",
+      "isbn_10": "6047751231"
+    },
+    "quality_signals": {
+      "average_rating": 4.2,
+      "ratings_count": 5400,
+      "maturity_rating": "Adult"
+    },
+    "indexing": {
+      "indexed_at": "2023-09-14T07:20:00Z",
+      "last_updated": "2024-02-20T18:00:00Z",
+      "enrichment_status": "complete",
+      "has_isbn": true,
+      "has_rating": true,
+      "data_completeness_score": 0.86
+    }
+  }
+]
+
