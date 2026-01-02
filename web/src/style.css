@@ -100,6 +100,21 @@ p, span, label, input, button, a, li, td, th {
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
   outline: none;
+  position: relative;
+  overflow: hidden;
+}
+.button-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s;
+}
+.button-primary:hover::before {
+  left: 100%;
 }
 .button-primary:hover, .button-primary:focus {
   background: linear-gradient(90deg, #C41E3A 80%, #F5C77A 100%);

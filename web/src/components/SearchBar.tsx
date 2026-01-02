@@ -1,4 +1,5 @@
-import { type FormEvent } from "react";
+import { type FormEvent, useState } from "react";
+import { motion } from "framer-motion";
 
 interface SearchBarProps {
   query: string;
@@ -15,14 +16,22 @@ export default function SearchBar({
   autoFocus = false,
   placeholder = "Search...",
 }: SearchBarProps) {
+  const [isFocused, setIsFocused] = useState(false);
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSubmit();
   };
 
   return (
-    <form
+    <motion.form
       onSubmit={handleSubmit}
+      animate={{
+        boxShadow: isFocused
+          ? "0 8px 24px rgba(196,30,58,0.2), 0 0 0 3px rgba(196,30,58,0.1)"
+          : "0 4px 16px rgba(196,30,58,0.12)",
+      }}
+      transition={{ duration: 0.2 }}
       style={{
         display: "flex",
         alignItems: "stretch",
@@ -69,6 +78,8 @@ export default function SearchBar({
           type="text"
           value={query}
           onChange={(e) => onChangeQuery(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
           autoFocus={autoFocus}
           style={{
@@ -92,9 +103,11 @@ export default function SearchBar({
           padding: "0.375rem",
         }}
       >
-        <button
+        <motion.button
           type="submit"
           className="button-primary"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           style={{
             height: "100%",
             padding: "0 2.5rem",
@@ -107,8 +120,8 @@ export default function SearchBar({
           }}
         >
           Search
-        </button>
+        </motion.button>
       </div>
-    </form>
+    </motion.form>
   );
 }

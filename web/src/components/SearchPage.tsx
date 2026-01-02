@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
 import type { SearchFilters } from "../types";
 import SearchBar from "./SearchBar";
 
@@ -18,8 +20,84 @@ export default function SearchPage({
   onSearch,
 }: SearchPageProps) {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [petals, setPetals] = useState<
+    Array<{ id: number; x: number; delay: number; duration: number }>
+  >([]);
+  const [currentQuote, setCurrentQuote] = useState<{
+    text: string;
+    author: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  // Inspiring book quotes
+  const bookQuotes = [
+    {
+      text: "A book is a dream that you hold in your hand.",
+      author: "Neil Gaiman",
+    },
+    { text: "Books are a uniquely portable magic.", author: "Stephen King" },
+    {
+      text: "Reading is to the mind what exercise is to the body.",
+      author: "Joseph Addison",
+    },
+    {
+      text: "The more that you read, the more things you will know.",
+      author: "Dr. Seuss",
+    },
+    {
+      text: "A room without books is like a body without a soul.",
+      author: "Cicero",
+    },
+    {
+      text: "There is no friend as loyal as a book.",
+      author: "Ernest Hemingway",
+    },
+    {
+      text: "Reading gives us someplace to go when we have to stay where we are.",
+      author: "Mason Cooley",
+    },
+    {
+      text: "Books are mirrors: you only see in them what you already have inside you.",
+      author: "Carlos Ruiz Zafón",
+    },
+    {
+      text: "A book is a gift you can open again and again.",
+      author: "Garrison Keillor",
+    },
+    { text: "Today a reader, tomorrow a leader.", author: "Margaret Fuller" },
+    {
+      text: "Đọc sách là cách tốt nhất để mở rộng tâm hồn.",
+      author: "Vietnamese Proverb",
+    },
+    {
+      text: "Good books don't give up all their secrets at once.",
+      author: "Stephen King",
+    },
+  ];
+
+  // Generate floating petals on mount
+  useEffect(() => {
+    const petalArray = Array.from({ length: 15 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 5,
+      duration: 8 + Math.random() * 4,
+    }));
+    setPetals(petalArray);
+  }, []);
 
   const handleSubmit = () => {
+    // Sparkle burst effect
+    confetti({
+      particleCount: 50,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ["#C41E3A", "#F5C77A", "#FFE5E5", "#FFF5E5"],
+      shapes: ["circle", "square"],
+      gravity: 1.2,
+      ticks: 200,
+    });
     onSearch(query);
   };
 
@@ -35,6 +113,73 @@ export default function SearchPage({
       yearMin: 1900,
       yearMax: new Date().getFullYear(),
       language: "All",
+    });
+  };
+
+  const handleFlowerBurst = () => {
+    // Select random quote with random position near decorative section
+    const randomQuote =
+      bookQuotes[Math.floor(Math.random() * bookQuotes.length)];
+
+    // Random position around the decorative section (bottom center area)
+    // X: 30-70% of viewport width (centered area)
+    // Y: start around 70-85% of viewport height (near bottom)
+    const randomX = Math.random() * 40;
+    const randomY = Math.random() * 15;
+
+    setCurrentQuote({
+      ...randomQuote,
+      x: randomX,
+      y: randomY,
+    });
+
+    // Auto-hide quote after 8 seconds (longer for reading)
+    setTimeout(() => setCurrentQuote(null), 4000);
+
+    // Create multiple flower bursts
+    const defaults = {
+      origin: { y: 0.5 },
+      colors: [
+        "#FFB7C5",
+        "#FFC0CB",
+        "#FF69B4",
+        "#FFE5E5",
+        "#FFF5E5",
+        "#C41E3A",
+      ],
+    };
+
+    function fire(particleRatio: number, opts: any) {
+      confetti({
+        ...defaults,
+        ...opts,
+        particleCount: Math.floor(200 * particleRatio),
+        shapes: ["circle"],
+      });
+    }
+
+    // Burst effect with multiple waves
+    fire(0.25, {
+      spread: 26,
+      startVelocity: 55,
+    });
+    fire(0.2, {
+      spread: 60,
+    });
+    fire(0.35, {
+      spread: 100,
+      decay: 0.91,
+      scalar: 0.8,
+    });
+    fire(0.1, {
+      spread: 120,
+      startVelocity: 25,
+      decay: 0.92,
+      scalar: 1.2,
+    });
+    fire(0.1, {
+      spread: 120,
+      startVelocity: 45,
     });
   };
 
@@ -55,9 +200,63 @@ export default function SearchPage({
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FFFDF8" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#FFFDF8",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Floating Peach Blossom Petals */}
+      {petals.map((petal) => (
+        <motion.div
+          key={petal.id}
+          initial={{ y: -100, x: `${petal.x}vw`, opacity: 0, rotate: 0 }}
+          animate={{
+            y: "110vh",
+            x: `${petal.x + Math.sin(petal.id) * 10}vw`,
+            opacity: [0, 0.6, 0.6, 0],
+            rotate: 360,
+          }}
+          transition={{
+            duration: petal.duration,
+            delay: petal.delay,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+          style={{
+            position: "fixed",
+            fontSize: "1.5rem",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        >
+          🌸
+        </motion.div>
+      ))}
+
+      {/* Animated Background Pattern */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          opacity: 0.03,
+          background:
+            "repeating-linear-gradient(45deg, #C41E3A 0px, #C41E3A 2px, transparent 2px, transparent 20px)",
+          animation: "patternMove 60s linear infinite",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
       {/* Top Header */}
-      <header
+      <motion.header
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -117,14 +316,23 @@ export default function SearchPage({
             👤
           </button>
         </div>
-      </header>
+      </motion.header>
 
       <div
-        style={{ maxWidth: "900px", margin: "0 auto", padding: "3rem 2rem" }}
+        style={{
+          maxWidth: "900px",
+          margin: "0 auto",
+          padding: "3rem 2rem",
+          position: "relative",
+          zIndex: 2,
+        }}
       >
         {/* Hero Search Section */}
         <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-          <h1
+          <motion.h1
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
             style={{
               fontSize: "3rem",
               fontWeight: 700,
@@ -135,8 +343,11 @@ export default function SearchPage({
           >
             Discover Your{" "}
             <span style={{ color: "#C41E3A" }}>Next Great Read</span>
-          </h1>
-          <p
+          </motion.h1>
+          <motion.p
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
             style={{
               fontSize: "1.1rem",
               color: "#C41E3A",
@@ -145,19 +356,30 @@ export default function SearchPage({
             }}
           >
             Tìm sách hay – Khai xuân tri thức
-          </p>
+          </motion.p>
 
           {/* Search Bar Component */}
-          <SearchBar
-            query={query}
-            onChangeQuery={onChangeQuery}
-            onSubmit={handleSubmit}
-            autoFocus
-            placeholder="Nhập tên sách, tác giả hoặc mô tả…"
-          />
+          <motion.div
+            initial={{ y: 20, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
+          >
+            <SearchBar
+              query={query}
+              onChangeQuery={onChangeQuery}
+              onSubmit={handleSubmit}
+              autoFocus
+              placeholder="Nhập tên sách, tác giả hoặc mô tả…"
+            />
+          </motion.div>
 
           {/* Trending Quick Suggestions */}
-          <div style={{ marginBottom: "2rem" }}>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.8, ease: "easeOut" }}
+            style={{ marginBottom: "2rem" }}
+          >
             <p
               style={{
                 fontSize: "0.95rem",
@@ -181,9 +403,19 @@ export default function SearchPage({
                 "Văn học Việt",
                 "Tiểu thuyết",
                 "Khoa học viễn tưởng",
-              ].map((tag) => (
-                <button
+              ].map((tag, index) => (
+                <motion.button
                   key={tag}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{
+                    duration: 0.4,
+                    delay: 0.9 + index * 0.1,
+                    type: "spring",
+                    stiffness: 200,
+                  }}
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => handleQuickSearch(tag)}
                   style={{
                     background:
@@ -200,7 +432,11 @@ export default function SearchPage({
                     transition: "all 0.2s",
                     boxShadow:
                       tag === "Sách Tết"
-                        ? "0 2px 8px rgba(196,30,58,0.1)"
+                        ? "0 2px 8px rgba(196,30,58,0.3)"
+                        : "none",
+                    animation:
+                      tag === "Sách Tết"
+                        ? "pulseGlow 2s ease-in-out infinite"
                         : "none",
                   }}
                   onMouseEnter={(e) => {
@@ -221,14 +457,17 @@ export default function SearchPage({
                   }}
                 >
                   {tag}
-                </button>
+                </motion.button>
               ))}
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Advanced Filter Panel (Collapsible) */}
-        <div
+        <motion.div
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1.3, ease: "easeOut" }}
           style={{
             background: "#fff",
             borderRadius: "16px",
@@ -258,7 +497,6 @@ export default function SearchPage({
             <div
               style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
             >
-              <span style={{ fontSize: "1.25rem" }}>#</span>
               <h3
                 style={{
                   margin: 0,
@@ -281,282 +519,318 @@ export default function SearchPage({
             </span>
           </button>
 
-          {filtersExpanded && (
-            <div
-              style={{
-                padding: "0 1.5rem 1.5rem",
-                animation: "slideDown 0.3s ease-out",
-              }}
-            >
-              {/* Genres */}
-              <div style={{ marginBottom: "1.5rem" }}>
-                <label
-                  style={{
-                    display: "block",
-                    fontWeight: 600,
-                    marginBottom: "0.75rem",
-                    color: "#2B2B2B",
-                    fontSize: "0.95rem",
-                  }}
-                >
-                  GENRES
-                </label>
-                <div
-                  style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
-                >
-                  {genreOptions.map((genre) => (
-                    <button
-                      key={genre}
-                      onClick={() => {
-                        const newGenres = filters.genres.includes(genre)
-                          ? filters.genres.filter((g) => g !== genre)
-                          : [...filters.genres, genre];
-                        onUpdateFilters({ genres: newGenres });
-                      }}
-                      style={{
-                        background: filters.genres.includes(genre)
-                          ? "#C41E3A"
-                          : "#fff",
-                        color: filters.genres.includes(genre)
-                          ? "#fff"
-                          : "#C41E3A",
-                        border: "1.5px solid #C41E3A",
-                        borderRadius: "20px",
-                        padding: "0.4rem 1rem",
-                        fontSize: "0.9rem",
-                        fontWeight: 500,
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}
-                    >
-                      {genre}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Two-column layout for other filters */}
-              <div
+          <AnimatePresence>
+            {filtersExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                  gap: "1.5rem",
+                  padding: "0 1.5rem 1.5rem",
+                  overflow: "hidden",
                 }}
               >
-                {/* Author */}
-                <div>
+                {/* Genres */}
+                <div style={{ marginBottom: "1.5rem" }}>
                   <label
                     style={{
                       display: "block",
                       fontWeight: 600,
-                      marginBottom: "0.5rem",
+                      marginBottom: "0.75rem",
                       color: "#2B2B2B",
                       fontSize: "0.95rem",
                     }}
                   >
-                    Author
+                    GENRES
                   </label>
-                  <input
-                    type="text"
-                    value={filters.author}
-                    onChange={(e) =>
-                      onUpdateFilters({ author: e.target.value })
-                    }
-                    placeholder="e.g. Nguyễn Nhật Ánh"
-                    style={{
-                      width: "100%",
-                      margin: 0,
-                    }}
-                  />
-                </div>
-
-                {/* Language */}
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "0.5rem",
-                      color: "#2B2B2B",
-                      fontSize: "0.95rem",
-                    }}
+                  <div
+                    style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
                   >
-                    Language
-                  </label>
-                  <select
-                    value={filters.language}
-                    onChange={(e) =>
-                      onUpdateFilters({ language: e.target.value })
-                    }
-                    style={{
-                      width: "100%",
-                      margin: 0,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {languageOptions.map((lang) => (
-                      <option key={lang} value={lang}>
-                        {lang}
-                      </option>
+                    {genreOptions.map((genre) => (
+                      <motion.button
+                        key={genre}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          const newGenres = filters.genres.includes(genre)
+                            ? filters.genres.filter((g) => g !== genre)
+                            : [...filters.genres, genre];
+                          onUpdateFilters({ genres: newGenres });
+                        }}
+                        style={{
+                          background: filters.genres.includes(genre)
+                            ? "#C41E3A"
+                            : "#fff",
+                          color: filters.genres.includes(genre)
+                            ? "#fff"
+                            : "#C41E3A",
+                          border: "1.5px solid #C41E3A",
+                          borderRadius: "20px",
+                          padding: "0.4rem 1rem",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                        }}
+                      >
+                        {genre}
+                      </motion.button>
                     ))}
-                  </select>
+                  </div>
                 </div>
-              </div>
 
-              {/* Year Range */}
-              <div style={{ marginTop: "1.5rem" }}>
-                <label
+                {/* Two-column layout for other filters */}
+                <div
                   style={{
-                    display: "block",
-                    fontWeight: 600,
-                    marginBottom: "0.75rem",
-                    color: "#2B2B2B",
-                    fontSize: "0.95rem",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                    gap: "1.5rem",
                   }}
                 >
-                  Year Range
-                </label>
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-                >
-                  <div style={{ flex: 1 }}>
+                  {/* Author */}
+                  <div>
                     <label
                       style={{
                         display: "block",
-                        fontSize: "0.85rem",
-                        color: "#6B7280",
-                        marginBottom: "0.25rem",
+                        fontWeight: 600,
+                        marginBottom: "0.5rem",
+                        color: "#2B2B2B",
+                        fontSize: "0.95rem",
                       }}
                     >
-                      From
+                      Author
                     </label>
                     <input
-                      type="number"
-                      min={1900}
-                      max={new Date().getFullYear()}
-                      value={filters.yearMin}
+                      type="text"
+                      value={filters.author}
                       onChange={(e) =>
-                        onUpdateFilters({ yearMin: Number(e.target.value) })
+                        onUpdateFilters({ author: e.target.value })
                       }
-                      placeholder="1900"
+                      placeholder="e.g. Nguyễn Nhật Ánh"
                       style={{
                         width: "100%",
                         margin: 0,
                       }}
                     />
                   </div>
-                  <span
+
+                  {/* Language */}
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontWeight: 600,
+                        marginBottom: "0.5rem",
+                        color: "#2B2B2B",
+                        fontSize: "0.95rem",
+                      }}
+                    >
+                      Language
+                    </label>
+                    <select
+                      value={filters.language}
+                      onChange={(e) =>
+                        onUpdateFilters({ language: e.target.value })
+                      }
+                      style={{
+                        width: "100%",
+                        margin: 0,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {languageOptions.map((lang) => (
+                        <option key={lang} value={lang}>
+                          {lang}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Year Range */}
+                <div style={{ marginTop: "1.5rem" }}>
+                  <label
                     style={{
-                      fontSize: "1.2rem",
-                      color: "#C41E3A",
-                      marginTop: "1.5rem",
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "0.75rem",
+                      color: "#2B2B2B",
+                      fontSize: "0.95rem",
                     }}
                   >
-                    –
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <label
+                    Year Range
+                  </label>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "1rem",
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "0.85rem",
+                          color: "#6B7280",
+                          marginBottom: "0.25rem",
+                        }}
+                      >
+                        From
+                      </label>
+                      <input
+                        type="number"
+                        min={1900}
+                        max={new Date().getFullYear()}
+                        value={filters.yearMin}
+                        onChange={(e) =>
+                          onUpdateFilters({ yearMin: Number(e.target.value) })
+                        }
+                        placeholder="1900"
+                        style={{
+                          width: "100%",
+                          margin: 0,
+                        }}
+                      />
+                    </div>
+                    <span
                       style={{
-                        display: "block",
-                        fontSize: "0.85rem",
-                        color: "#6B7280",
-                        marginBottom: "0.25rem",
+                        fontSize: "1.2rem",
+                        color: "#C41E3A",
+                        marginTop: "1.5rem",
                       }}
                     >
-                      To
-                    </label>
-                    <input
-                      type="number"
-                      min={1900}
-                      max={new Date().getFullYear()}
-                      value={filters.yearMax}
-                      onChange={(e) =>
-                        onUpdateFilters({ yearMax: Number(e.target.value) })
-                      }
-                      placeholder={String(new Date().getFullYear())}
-                      style={{
-                        width: "100%",
-                        margin: 0,
-                      }}
-                    />
+                      –
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "0.85rem",
+                          color: "#6B7280",
+                          marginBottom: "0.25rem",
+                        }}
+                      >
+                        To
+                      </label>
+                      <input
+                        type="number"
+                        min={1900}
+                        max={new Date().getFullYear()}
+                        value={filters.yearMax}
+                        onChange={(e) =>
+                          onUpdateFilters({ yearMax: Number(e.target.value) })
+                        }
+                        placeholder={String(new Date().getFullYear())}
+                        style={{
+                          width: "100%",
+                          margin: 0,
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Minimum Rating */}
-              <div style={{ marginTop: "1.5rem" }}>
-                <label
-                  style={{
-                    display: "block",
-                    fontWeight: 600,
-                    marginBottom: "0.5rem",
-                    color: "#2B2B2B",
-                    fontSize: "0.95rem",
-                  }}
-                >
-                  Minimum Rating
-                </label>
+                {/* Minimum Rating */}
+                <div style={{ marginTop: "1.5rem" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontWeight: 600,
+                      marginBottom: "0.5rem",
+                      color: "#2B2B2B",
+                      fontSize: "0.95rem",
+                    }}
+                  >
+                    Minimum Rating
+                  </label>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.5rem",
+                      alignItems: "center",
+                    }}
+                  >
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <motion.button
+                        key={star}
+                        whileHover={{ scale: 1.2, rotate: 15 }}
+                        whileTap={{ scale: 0.9, rotate: -15 }}
+                        onClick={() => onUpdateFilters({ minRating: star })}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          fontSize: "1.5rem",
+                          cursor: "pointer",
+                          filter:
+                            star <= filters.minRating
+                              ? "none"
+                              : "grayscale(100%)",
+                          opacity: star <= filters.minRating ? 1 : 0.3,
+                          transition: "all 0.2s",
+                        }}
+                      >
+                        ⭐
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
                 <div
                   style={{
                     display: "flex",
-                    gap: "0.5rem",
-                    alignItems: "center",
+                    gap: "1rem",
+                    marginTop: "1.5rem",
+                    justifyContent: "flex-end",
                   }}
                 >
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      onClick={() => onUpdateFilters({ minRating: star })}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        fontSize: "1.5rem",
-                        cursor: "pointer",
-                        filter:
-                          star <= filters.minRating
-                            ? "none"
-                            : "grayscale(100%)",
-                        opacity: star <= filters.minRating ? 1 : 0.3,
-                        transition: "all 0.2s",
-                      }}
-                    >
-                      ⭐
-                    </button>
-                  ))}
+                  <button
+                    onClick={handleClearFilters}
+                    className="button-outline"
+                    style={{ padding: "0.6rem 1.5rem" }}
+                  >
+                    Clear all filters
+                  </button>
+                  <button
+                    onClick={() => onSearch(query)}
+                    className="button-primary"
+                    style={{ padding: "0.75rem 2rem" }}
+                  >
+                    Apply Filters
+                  </button>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "1rem",
-                  marginTop: "1.5rem",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <button
-                  onClick={handleClearFilters}
-                  className="button-outline"
-                  style={{ padding: "0.6rem 1.5rem" }}
-                >
-                  Clear all filters
-                </button>
-                <button
-                  onClick={() => onSearch(query)}
-                  className="button-primary"
-                  style={{ padding: "0.75rem 2rem" }}
-                >
-                  Apply Filters
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
         {/* Decorative Section */}
-        <div style={{ textAlign: "center", marginTop: "4rem" }}>
-          <div
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{
+            duration: 0.8,
+            delay: 1.5,
+            type: "spring",
+            stiffness: 100,
+          }}
+          style={{ textAlign: "center", marginTop: "4rem" }}
+        >
+          <motion.div
+            animate={{
+              y: [0, -10, 0],
+              rotate: [0, 5, -5, 0],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            whileHover={{ scale: 1.1, rotate: 360 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={handleFlowerBurst}
             style={{
               width: "200px",
               height: "200px",
@@ -568,6 +842,8 @@ export default function SearchPage({
               justifyContent: "center",
               boxShadow: "0 8px 32px rgba(196,30,58,0.12)",
               position: "relative",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
             }}
           >
             <div
@@ -584,18 +860,38 @@ export default function SearchPage({
             >
               🌸
             </div>
-            <div
+            {/* Click Me Badge */}
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{
+                duration: 0.5,
+                delay: 2.2,
+                type: "spring",
+                stiffness: 300,
+              }}
               style={{
                 position: "absolute",
-                top: "10%",
-                right: "10%",
-                fontSize: "2rem",
+                bottom: "-10px",
+                right: "-10px",
+                background: "linear-gradient(135deg, #C41E3A 0%, #F5C77A 100%)",
+                color: "#fff",
+                padding: "0.4rem 1rem",
+                borderRadius: "20px",
+                fontSize: "0.85rem",
+                fontWeight: 700,
+                boxShadow: "0 4px 12px rgba(196,30,58,0.3)",
+                pointerEvents: "none",
+                animation: "bounce 2s ease-in-out infinite",
               }}
             >
-              🎆
-            </div>
-          </div>
-          <h2
+              Click me! 👆
+            </motion.div>
+          </motion.div>
+          <motion.h2
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 1.8 }}
             style={{
               fontSize: "1.75rem",
               fontWeight: 700,
@@ -604,8 +900,11 @@ export default function SearchPage({
             }}
           >
             Happy Lunar New Year!
-          </h2>
-          <p
+          </motion.h2>
+          <motion.p
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 2.0 }}
             style={{
               fontSize: "1rem",
               color: "#6B7280",
@@ -617,32 +916,90 @@ export default function SearchPage({
             Start by typing in the search bar above to explore our
             <br />
             collection of festive reads, classics, and modern bestsellers.
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
-        {/* Footer */}
-        <footer
-          style={{
-            marginTop: "4rem",
-            paddingTop: "2rem",
-            borderTop: "2px solid #F5C77A",
-            textAlign: "center",
-            color: "#6B7280",
-            fontSize: "0.9rem",
-          }}
-        >
-          <div
-            style={{ display: "flex", gap: "2rem", justifyContent: "center" }}
-          >
-            <a href="#" style={{ color: "#6B7280", textDecoration: "none" }}>
-              Privacy
-            </a>
-            <a href="#" style={{ color: "#6B7280", textDecoration: "none" }}>
-              Terms
-            </a>
-          </div>
-          <p style={{ marginTop: "1rem" }}>© 2024 BookSearch System</p>
-        </footer>
+        {/* Floating Quote Display */}
+        <AnimatePresence>
+          {currentQuote && (
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: currentQuote.y,
+                x: `${currentQuote.x}vw`,
+                scale: 0.8,
+              }}
+              animate={{
+                opacity: [0, 1, 1, 0],
+                y: `${currentQuote.y - 30}vh`,
+                x: `${currentQuote.x + Math.sin(currentQuote.x) * 3}vw`,
+                scale: [0.8, 1, 1, 0.9],
+              }}
+              exit={{ opacity: 0, scale: 0.7 }}
+              transition={{
+                duration: 8,
+                ease: "easeOut",
+                opacity: {
+                  times: [0, 0.1, 0.9, 1],
+                  duration: 8,
+                },
+              }}
+              style={{
+                position: "fixed",
+                bottom: 0,
+                left: 0,
+                zIndex: 100,
+                pointerEvents: "none",
+                maxWidth: "400px",
+              }}
+            >
+              <div
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(255,253,248,0.95) 0%, rgba(255,229,229,0.95) 100%)",
+                  borderRadius: "20px",
+                  padding: "1.5rem 2rem",
+                  boxShadow:
+                    "0 10px 40px rgba(196,30,58,0.2), 0 0 0 1px rgba(245,199,122,0.5)",
+                  border: "2px solid #F5C77A",
+                  backdropFilter: "blur(10px)",
+                  textAlign: "center",
+                }}
+              >
+                {/* Quote Icon */}
+                <div style={{ fontSize: "1.8rem", marginBottom: "0.75rem" }}>
+                  📖
+                </div>
+
+                {/* Quote Text */}
+                <p
+                  style={{
+                    fontSize: "1.1rem",
+                    fontWeight: 600,
+                    color: "#2B2B2B",
+                    lineHeight: 1.5,
+                    marginBottom: "0.75rem",
+                    fontStyle: "italic",
+                  }}
+                >
+                  "{currentQuote.text}"
+                </p>
+
+                {/* Author */}
+                <p
+                  style={{
+                    fontSize: "0.95rem",
+                    color: "#C41E3A",
+                    fontWeight: 700,
+                    marginBottom: "0",
+                  }}
+                >
+                  — {currentQuote.author}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <style>{`
@@ -654,6 +1011,30 @@ export default function SearchPage({
           to {
             opacity: 1;
             transform: translateY(0);
+          }
+        }
+        @keyframes pulseGlow {
+          0%, 100% {
+            box-shadow: 0 2px 8px rgba(196,30,58,0.3), 0 0 0 0 rgba(196,30,58,0.4);
+          }
+          50% {
+            box-shadow: 0 4px 16px rgba(196,30,58,0.5), 0 0 20px 5px rgba(196,30,58,0.2);
+          }
+        }
+        @keyframes patternMove {
+          0% {
+            background-position: 0 0;
+          }
+          100% {
+            background-position: 100px 100px;
+          }
+        }
+        @keyframes bounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-8px);
           }
         }
       `}</style>
