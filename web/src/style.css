@@ -1,3 +1,225 @@
+/* Add your global styles here */
+/*
+  🌸 Vietnamese Tết Inspired Global Styles
+  Color Palette:
+    Primary: #C41E3A (Vermilion Red)
+    Secondary: #F5C77A (Warm Gold)
+    Accent: #1F7A63 (Jade Green)
+    Background: #FFFDF8 (Warm Ivory)
+    Text: #2B2B2B (Charcoal Black), #6B7280 (Muted Gray)
+  Typography: Inter, SF Pro, Satoshi, sans-serif
+  UI: Rounded corners, shadows, white space, festive motifs
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  background: #FFFDF8;
+  color: #2B2B2B;
+  font-family: 'Inter', 'SF Pro', 'Satoshi', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  background: #FFFDF8;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Inter', 'SF Pro', 'Satoshi', Arial, sans-serif;
+  font-weight: 700;
+  color: #C41E3A;
+  margin-top: 0;
+  margin-bottom: 0.5em;
+}
+
+h1 {
+  font-size: 2.5rem;
+  letter-spacing: -1px;
+}
+h2 {
+  font-size: 2rem;
+}
+h3 {
+  font-size: 1.5rem;
+}
+h4 {
+  font-size: 1.2rem;
+}
+
+p, span, label, input, button, a, li, td, th {
+  font-family: 'Inter', 'SF Pro', 'Satoshi', Arial, sans-serif;
+  font-size: 1rem;
+  color: #2B2B2B;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px 0 rgba(196,30,58,0.08), 0 1.5px 6px 0 rgba(31,122,99,0.04);
+  padding: 2rem;
+  margin: 1.5rem 0;
+  position: relative;
+  transition: box-shadow 0.2s;
+}
+.card:hover, .card:focus-within {
+  box-shadow: 0 8px 32px 0 rgba(196,30,58,0.16), 0 3px 12px 0 rgba(31,122,99,0.08);
+}
+
+.header-gradient {
+  background: linear-gradient(90deg, #C41E3A 0%, #F5C77A 100%);
+  color: #fff;
+  border-radius: 0 0 16px 16px;
+  padding: 2rem 2rem 1.5rem 2rem;
+  box-shadow: 0 2px 8px 0 rgba(196,30,58,0.10);
+  position: relative;
+}
+
+.gold-divider {
+  border: none;
+  height: 3px;
+  background: linear-gradient(90deg, #F5C77A 60%, #C41E3A 100%);
+  border-radius: 2px;
+  margin: 2rem 0;
+}
+
+.button-primary {
+  background: linear-gradient(90deg, #C41E3A 60%, #F5C77A 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px 0 rgba(196,30,58,0.10);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  outline: none;
+}
+.button-primary:hover, .button-primary:focus {
+  background: linear-gradient(90deg, #C41E3A 80%, #F5C77A 100%);
+  box-shadow: 0 4px 16px 0 rgba(196,30,58,0.16);
+  transform: translateY(-2px) scale(1.03);
+}
+.button-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button-accent {
+  background: #1F7A63;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px 0 rgba(31,122,99,0.10);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.button-accent:hover, .button-accent:focus {
+  background: #17604e;
+  box-shadow: 0 4px 16px 0 rgba(31,122,99,0.16);
+}
+
+.button-outline {
+  background: transparent;
+  color: #C41E3A;
+  border: 2px solid #C41E3A;
+  border-radius: 12px;
+  padding: 0.6rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.button-outline:hover, .button-outline:focus {
+  background: #C41E3A;
+  color: #fff;
+}
+
+.badge-lixi {
+  display: inline-block;
+  background: linear-gradient(90deg, #C41E3A 80%, #F5C77A 100%);
+  color: #fff;
+  border-radius: 16px 16px 8px 8px;
+  padding: 0.3em 1em;
+  font-size: 0.95em;
+  font-weight: 700;
+  box-shadow: 0 2px 8px 0 rgba(196,30,58,0.10);
+  margin-left: 0.5em;
+  position: relative;
+}
+
+.muted {
+  color: #6B7280;
+}
+
+input, select, textarea {
+  border-radius: 12px;
+  border: 1.5px solid #F5C77A;
+  padding: 0.7em 1em;
+  font-size: 1rem;
+  background: #fff;
+  margin-bottom: 1em;
+  transition: border 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+input:focus, select:focus, textarea:focus {
+  border: 1.5px solid #C41E3A;
+  box-shadow: 0 0 0 2px #F5C77A33;
+}
+
+.festive-svg {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.18;
+}
+
+/* Firework sparkle micro-interaction */
+.firework {
+  animation: firework-sparkle 1.2s ease-in-out;
+}
+@keyframes firework-sparkle {
+  0% { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+  40% { opacity: 1; transform: scale(1.1) rotate(8deg); }
+  100% { opacity: 0; transform: scale(1.5) rotate(0deg); }
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.flex {
+  display: flex;
+  gap: 1.5rem;
+}
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mb-2 { margin-bottom: 2rem; }
+.mt-2 { margin-top: 2rem; }
+.mt-1 { margin-top: 1rem; }
+.mb-1 { margin-bottom: 1rem; }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .container { padding: 1rem 0.5rem; }
+  .card { padding: 1rem; }
+  .header-gradient { padding: 1.2rem 1rem 1rem 1rem; }
+}
 :root {
   font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
   line-height: 1.6;

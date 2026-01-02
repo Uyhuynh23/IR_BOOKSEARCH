@@ -14,3 +14,12 @@ export interface Book {
   extracted_characters: string; // Dữ liệu AI trích xuất
   extracted_settings: string;   // Dữ liệu AI trích xuất
 }
+
+export interface SearchFilters {
+  genres: string[];
+  author: string;
+  minRating: number;
+  yearMin: number;
+  yearMax: number;
+  language: string;
+}
