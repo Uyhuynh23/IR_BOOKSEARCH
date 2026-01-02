@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import type { Book } from "../types";
+import SearchBar from "./SearchBar";
 
 interface ResultsPageProps {
   results: Book[];
@@ -22,10 +23,10 @@ export default function ResultsPage({
   const [currentPage, setCurrentPage] = useState(1);
   const booksPerPage = 12;
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSearchSubmit = () => {
     if (searchQuery.trim()) {
       onSearchAgain(searchQuery);
+      setCurrentPage(1);
     }
   };
 
@@ -80,97 +81,66 @@ export default function ResultsPage({
         style={{
           background: "#fff",
           boxShadow: "0 2px 8px rgba(196,30,58,0.08)",
-          padding: "1rem 2rem",
+          paddingTop: "1rem",
+          paddingLeft: "1rem",
+          paddingRight: "1rem",
         }}
       >
-        <form
-          onSubmit={handleSubmit}
+        <div
           style={{
             maxWidth: "900px",
             margin: "0 auto",
             display: "flex",
-            gap: "0.5rem",
+            gap: "1rem",
             alignItems: "center",
           }}
         >
+          {/* Back Arrow Button */}
           <button
-            type="button"
             onClick={onBack}
             style={{
               background: "transparent",
               border: "none",
-              fontSize: "1.5rem",
               cursor: "pointer",
               padding: "0.5rem",
-              color: "#2B2B2B",
-            }}
-          >
-            ←
-          </button>
-          <div
-            style={{
-              flex: 1,
               display: "flex",
-              alignItems: "center",
-              background: "#FFFDF8",
-              borderRadius: "50px",
-              padding: "0.5rem 1rem",
-              border: "1.5px solid #F5C77A",
+              color: "#C41E3A",
+              fontSize: "1.5rem",
+              transition: "transform 0.2s",
+              marginBottom: "22px",
             }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.transform = "translateX(-4px)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.transform = "translateX(0)")
+            }
+            title="Back to search"
           >
-            <span style={{ fontSize: "1.1rem", marginRight: "0.5rem" }}>
-              🔍
-            </span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                flex: 1,
-                border: "none",
-                background: "transparent",
-                fontSize: "1rem",
-                outline: "none",
-                color: "#2B2B2B",
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              style={{
-                background: "transparent",
-                border: "none",
-                fontSize: "1.2rem",
-                cursor: "pointer",
-                color: "#6B7280",
-              }}
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              ✕
-            </button>
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          {/* Search Bar */}
+          <div style={{ flex: 1 }}>
+            <SearchBar
+              query={searchQuery}
+              onChangeQuery={setSearchQuery}
+              onSubmit={handleSearchSubmit}
+              placeholder="Search for books..."
+            />
           </div>
-          <button
-            type="button"
-            style={{
-              background: "transparent",
-              border: "none",
-              fontSize: "1.5rem",
-              cursor: "pointer",
-            }}
-          >
-            🔔
-          </button>
-          <button
-            type="button"
-            style={{
-              background: "transparent",
-              border: "none",
-              fontSize: "1.5rem",
-              cursor: "pointer",
-            }}
-          >
-            👤
-          </button>
-        </form>
+        </div>
       </header>
 
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "2rem" }}>
@@ -187,15 +157,6 @@ export default function ResultsPage({
             Tìm thấy {results.length} cuốn sách cho{" "}
             <span style={{ color: "#C41E3A" }}>'{query}'</span>
           </h1>
-          <p
-            style={{
-              fontSize: "1rem",
-              color: "#C41E3A",
-              marginBottom: "1rem",
-            }}
-          >
-            Khám phá những câu chuyện ly án điệp Tết này
-          </p>
 
           {/* Sort Options */}
           <div
@@ -221,6 +182,7 @@ export default function ResultsPage({
                 fontSize: "0.9rem",
                 cursor: "pointer",
                 outline: "none",
+                margin: 0,
               }}
             >
               <option value="relevance">Độ liên quan</option>
@@ -266,6 +228,7 @@ export default function ResultsPage({
               return (
                 <div
                   key={book.bookID}
+                  onClick={() => onSelectBook?.(book.bookID)}
                   style={{
                     background: "#fff",
                     borderRadius: "16px",
@@ -453,7 +416,10 @@ export default function ResultsPage({
 
                     {/* View Details Button */}
                     <button
-                      onClick={() => onSelectBook?.(book.bookID)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectBook?.(book.bookID);
+                      }}
                       className="button-outline"
                       style={{
                         width: "100%",
