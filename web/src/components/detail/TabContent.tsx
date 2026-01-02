@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import type { Book } from "../../types";
+import type { GoogleBookDetails } from "../../utils/googleBooksApi";
+import { formatLanguage } from "../../utils/googleBooksApi";
 
 interface TabContentProps {
   activeTab: "description" | "metadata" | "reviews";
@@ -9,11 +11,7 @@ interface TabContentProps {
   shouldShowReadMore: boolean;
   descriptionExpanded: boolean;
   onToggleDescription: () => void;
-  reviewDistribution: Array<{
-    stars: number;
-    percentage: number;
-    count: number;
-  }>;
+  googleData: GoogleBookDetails | null;
 }
 
 export default function TabContent({
@@ -24,7 +22,7 @@ export default function TabContent({
   shouldShowReadMore,
   descriptionExpanded,
   onToggleDescription,
-  reviewDistribution,
+  googleData,
 }: TabContentProps) {
   if (activeTab === "description") {
     return (
@@ -145,9 +143,33 @@ export default function TabContent({
           }}
         >
           <MetadataItem label="Book ID" value={book.bookID.toString()} />
+          <MetadataItem label="Title" value={book.title} />
+          <MetadataItem label="Author(s)" value={book.authors} />
           <MetadataItem
-            label="Published Year"
-            value={book.published_year || "Unknown"}
+            label="Publisher"
+            value={googleData?.publisher || "Unknown"}
+          />
+          <MetadataItem
+            label="Published Date"
+            value={
+              googleData?.publishedDate || book.published_year || "Unknown"
+            }
+          />
+          <MetadataItem
+            label="Language"
+            value={formatLanguage(googleData?.language)}
+          />
+          <MetadataItem
+            label="Pages"
+            value={
+              googleData?.pageCount
+                ? googleData.pageCount.toString()
+                : "Unknown"
+            }
+          />
+          <MetadataItem
+            label="Format"
+            value={googleData?.printType || "Unknown"}
           />
           <MetadataItem
             label="ISBN"
@@ -159,139 +181,74 @@ export default function TabContent({
           />
           <MetadataItem
             label="Average Rating"
-            value={book.average_rating.toString()}
+            value={`${book.average_rating} / 5.0`}
           />
           <MetadataItem
-            label="Preview Link"
-            value={book.preview_link ? "Available" : "Not available"}
+            label="Ratings Count"
+            value={googleData?.ratingsCount?.toLocaleString() || "No ratings"}
           />
         </div>
+
+        {/* Additional Categories from Google Books */}
+        {googleData?.categories && googleData.categories.length > 0 && (
+          <div style={{ marginTop: "2rem" }}>
+            <h4
+              style={{
+                fontSize: "1.1rem",
+                fontWeight: 700,
+                color: "#2B2B2B",
+                marginBottom: "1rem",
+              }}
+            >
+              📚 Subject Categories
+            </h4>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              {googleData.categories.map((category, idx) => (
+                <span
+                  key={idx}
+                  style={{
+                    background: "#FFE5E5",
+                    color: "#C41E3A",
+                    padding: "0.4rem 1rem",
+                    borderRadius: "20px",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {category}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </motion.div>
     );
   }
 
+  // Reviews tab
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
+      style={{ textAlign: "center", padding: "3rem 2rem" }}
     >
-      {/* Review Statistics */}
-      <div style={{ marginBottom: "3rem" }}>
-        <h3
-          style={{
-            fontSize: "1.3rem",
-            fontWeight: 700,
-            color: "#2B2B2B",
-            marginBottom: "1.5rem",
-          }}
-        >
-          📊 Rating Distribution
-        </h3>
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
-        >
-          {reviewDistribution.map((dist) => (
-            <div
-              key={dist.stars}
-              style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-            >
-              <div
-                style={{
-                  width: "80px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.25rem",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: 600,
-                    color: "#2B2B2B",
-                  }}
-                >
-                  {dist.stars}
-                </span>
-                <span style={{ fontSize: "1rem" }}>⭐</span>
-              </div>
-              <div
-                style={{
-                  flex: 1,
-                  background: "#F5F5F5",
-                  borderRadius: "8px",
-                  height: "24px",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${dist.percentage}%` }}
-                  transition={{ duration: 1, delay: dist.stars * 0.1 }}
-                  style={{
-                    height: "100%",
-                    background:
-                      dist.stars >= 4
-                        ? "linear-gradient(90deg, #C41E3A 0%, #F5C77A 100%)"
-                        : dist.stars === 3
-                        ? "#F5C77A"
-                        : "#E5E7EB",
-                    borderRadius: "8px",
-                  }}
-                />
-              </div>
-              <div
-                style={{
-                  width: "60px",
-                  fontSize: "0.9rem",
-                  fontWeight: 600,
-                  color: "#6B7280",
-                  textAlign: "right",
-                }}
-              >
-                {dist.percentage}%
-              </div>
-              <div
-                style={{
-                  width: "80px",
-                  fontSize: "0.85rem",
-                  color: "#9CA3AF",
-                  textAlign: "right",
-                }}
-              >
-                ({dist.count})
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Coming Soon Message */}
-      <div
+      <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>💬</div>
+      <h3
         style={{
-          textAlign: "center",
-          padding: "2rem",
-          background: "linear-gradient(135deg, #FFF5E5 0%, #FFE5E5 100%)",
-          borderRadius: "16px",
+          fontSize: "1.5rem",
+          fontWeight: 700,
+          color: "#2B2B2B",
+          marginBottom: "0.5rem",
         }}
       >
-        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>💬</div>
-        <p
-          style={{
-            fontSize: "1.1rem",
-            fontWeight: 600,
-            color: "#2B2B2B",
-            marginBottom: "0.5rem",
-          }}
-        >
-          Detailed reviews coming soon!
-        </p>
-        <p style={{ color: "#6B7280" }}>
-          Check back later to read what other readers are saying about this
-          book.
-        </p>
-      </div>
+        Reviews Coming Soon
+      </h3>
+      <p style={{ fontSize: "1rem", color: "#6B7280", lineHeight: 1.6 }}>
+        User reviews and ratings will be available once our review system is
+        launched. Check back soon to see what readers are saying about this
+        book!
+      </p>
     </motion.div>
   );
 }

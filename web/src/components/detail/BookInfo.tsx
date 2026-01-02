@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import type { Book } from "../../types";
+import type { GoogleBookDetails } from "../../utils/googleBooksApi";
+import { formatLanguage } from "../../utils/googleBooksApi";
 
 interface BookInfoProps {
   book: Book;
@@ -11,6 +13,8 @@ interface BookInfoProps {
   onReadingListToggle: () => void;
   getReadingListIcon: () => string;
   getReadingListText: () => string;
+  googleData: GoogleBookDetails | null;
+  loadingGoogleData: boolean;
 }
 
 export default function BookInfo({
@@ -23,6 +27,8 @@ export default function BookInfo({
   onReadingListToggle,
   getReadingListIcon,
   getReadingListText,
+  googleData,
+  loadingGoogleData,
 }: BookInfoProps) {
   return (
     <motion.div
@@ -85,73 +91,10 @@ export default function BookInfo({
           {book.average_rating}
         </span>
         <span style={{ fontSize: "0.95rem", color: "#6B7280" }}>
-          (1,240 reviews)
+          {googleData?.ratingsCount
+            ? `(${googleData.ratingsCount.toLocaleString()} reviews)`
+            : "(No reviews yet)"}
         </span>
-      </div>
-
-      {/* Social Proof Badges */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          flexWrap: "wrap",
-          marginBottom: "1rem",
-        }}
-      >
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.5, type: "spring" }}
-          style={{
-            background: "linear-gradient(135deg, #C41E3A 0%, #A01528 100%)",
-            color: "#fff",
-            padding: "0.4rem 1rem",
-            borderRadius: "20px",
-            fontSize: "0.8rem",
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-          }}
-        >
-          🔥 Trending
-        </motion.span>
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.6, type: "spring" }}
-          style={{
-            background: "linear-gradient(135deg, #F5C77A 0%, #E5B76A 100%)",
-            color: "#2B2B2B",
-            padding: "0.4rem 1rem",
-            borderRadius: "20px",
-            fontSize: "0.8rem",
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-          }}
-        >
-          ⭐ Top Rated
-        </motion.span>
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.7, type: "spring" }}
-          style={{
-            background: "linear-gradient(135deg, #1F7A63 0%, #0D5A48 100%)",
-            color: "#fff",
-            padding: "0.4rem 1rem",
-            borderRadius: "20px",
-            fontSize: "0.8rem",
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-          }}
-        >
-          📚 2.4k views
-        </motion.span>
       </div>
 
       {/* Genre Badges */}
@@ -184,23 +127,25 @@ export default function BookInfo({
       </div>
 
       {/* Reading Time Estimate */}
-      <div
-        style={{
-          background: "linear-gradient(135deg, #FFF5E5 0%, #FFE5E5 100%)",
-          borderRadius: "12px",
-          padding: "0.75rem 1rem",
-          marginBottom: "2rem",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          fontSize: "0.9rem",
-          color: "#2B2B2B",
-          fontWeight: 600,
-        }}
-      >
-        ⏱️ About {readingHours}h {remainingMinutes}m to read ({estimatedPages}{" "}
-        pages)
-      </div>
+      {estimatedPages > 0 && (
+        <div
+          style={{
+            background: "linear-gradient(135deg, #FFF5E5 0%, #FFE5E5 100%)",
+            borderRadius: "12px",
+            padding: "0.75rem 1rem",
+            marginBottom: "2rem",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            fontSize: "0.9rem",
+            color: "#2B2B2B",
+            fontWeight: 600,
+          }}
+        >
+          ⏱️ About {readingHours}h {remainingMinutes}m to read ({estimatedPages}{" "}
+          pages)
+        </div>
+      )}
 
       {/* Metadata Grid */}
       <div
@@ -217,13 +162,27 @@ export default function BookInfo({
       >
         <MetadataField
           label="PUBLISHED"
-          value={book.published_year || "Unknown"}
+          value={googleData?.publishedDate || book.published_year || "Unknown"}
+          loading={loadingGoogleData}
         />
-        <MetadataField label="LANGUAGE" value="Vietnamese" />
-        <MetadataField label="FORMAT" value="Hardcover, 324 pgs" />
         <MetadataField
-          label="ISBN"
-          value={book.clean_isbn || "Not available"}
+          label="LANGUAGE"
+          value={formatLanguage(googleData?.language)}
+          loading={loadingGoogleData}
+        />
+        <MetadataField
+          label="FORMAT"
+          value={
+            estimatedPages > 0
+              ? `${googleData?.printType || "Book"}, ${estimatedPages} pgs`
+              : googleData?.printType || "Book"
+          }
+          loading={loadingGoogleData}
+        />
+        <MetadataField
+          label="PUBLISHER"
+          value={googleData?.publisher || "Unknown"}
+          loading={loadingGoogleData}
         />
       </div>
 
@@ -298,7 +257,15 @@ export default function BookInfo({
   );
 }
 
-function MetadataField({ label, value }: { label: string; value: string }) {
+function MetadataField({
+  label,
+  value,
+  loading = false,
+}: {
+  label: string;
+  value: string;
+  loading?: boolean;
+}) {
   return (
     <div>
       <div
@@ -314,7 +281,7 @@ function MetadataField({ label, value }: { label: string; value: string }) {
         {label}
       </div>
       <div style={{ fontSize: "0.95rem", color: "#2B2B2B", fontWeight: 500 }}>
-        {value}
+        {loading ? <span style={{ opacity: 0.5 }}>Loading...</span> : value}
       </div>
     </div>
   );

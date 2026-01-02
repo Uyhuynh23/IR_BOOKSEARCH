@@ -8,6 +8,11 @@ import BookCover from "./detail/BookCover";
 import BookInfo from "./detail/BookInfo";
 import TabContent from "./detail/TabContent";
 import RelatedBooks from "./detail/RelatedBooks";
+import {
+  fetchGoogleBookDetails,
+  calculateReadingTime,
+  type GoogleBookDetails,
+} from "../utils/googleBooksApi";
 
 interface DetailPageProps {
   book: Book;
@@ -42,6 +47,8 @@ export default function DetailPage({
       duration: number;
     }>
   >([]);
+  const [googleData, setGoogleData] = useState<GoogleBookDetails | null>(null);
+  const [loadingGoogleData, setLoadingGoogleData] = useState(true);
 
   const genres = book.google_category
     ? book.google_category
@@ -54,11 +61,14 @@ export default function DetailPage({
     ? parseInt(book.published_year) < 1950
     : false;
 
-  // Calculate reading time
-  const estimatedPages = 324;
-  const readingMinutes = Math.ceil((estimatedPages * 300) / 250);
-  const readingHours = Math.floor(readingMinutes / 60);
-  const remainingMinutes = readingMinutes % 60;
+  // Get page count and calculate reading time from Google Books data
+  const estimatedPages = googleData?.pageCount || 0;
+  const readingTime =
+    estimatedPages > 0
+      ? calculateReadingTime(estimatedPages)
+      : { hours: 0, minutes: 0 };
+  const readingHours = readingTime.hours;
+  const remainingMinutes = readingTime.minutes;
 
   // Track window resize
   useEffect(() => {
@@ -101,6 +111,17 @@ export default function DetailPage({
     ];
     setFloatingElements(elements);
   }, []);
+
+  // Fetch Google Books data for additional details
+  useEffect(() => {
+    async function loadGoogleData() {
+      setLoadingGoogleData(true);
+      const data = await fetchGoogleBookDetails(book.clean_isbn, book.title);
+      setGoogleData(data);
+      setLoadingGoogleData(false);
+    }
+    loadGoogleData();
+  }, [book.clean_isbn, book.title]);
 
   const handleReadingListToggle = () => {
     const newValue = readingList === "favorite" ? "none" : "favorite";
@@ -145,14 +166,6 @@ export default function DetailPage({
         return "Add to List";
     }
   };
-
-  const reviewDistribution = [
-    { stars: 5, percentage: 65, count: 806 },
-    { stars: 4, percentage: 25, count: 310 },
-    { stars: 3, percentage: 8, count: 99 },
-    { stars: 2, percentage: 1, count: 12 },
-    { stars: 1, percentage: 1, count: 13 },
-  ];
 
   const description =
     book.description ||
@@ -256,6 +269,8 @@ export default function DetailPage({
             onReadingListToggle={handleReadingListToggle}
             getReadingListIcon={getReadingListIcon}
             getReadingListText={getReadingListText}
+            googleData={googleData}
+            loadingGoogleData={loadingGoogleData}
           />
         </div>
 
@@ -309,7 +324,7 @@ export default function DetailPage({
             onToggleDescription={() =>
               setDescriptionExpanded(!descriptionExpanded)
             }
-            reviewDistribution={reviewDistribution}
+            googleData={googleData}
           />
         </div>
 
