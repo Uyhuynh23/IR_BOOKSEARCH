@@ -51,32 +51,30 @@ export default function DetailPage({
               display: "flex",
               alignItems: "center",
               gap: "0.5rem",
-              marginBottom: "0.5rem",
+              transition: "transform 0.2s",
             }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.transform = "translateX(-4px)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.transform = "translateX(0)")
+            }
+            title="Back to results"
           >
-            ← Back to results
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back to results
           </button>
-
-          {/* Breadcrumbs */}
-          <div
-            style={{
-              fontSize: "0.85rem",
-              color: "#6B7280",
-              display: "flex",
-              gap: "0.5rem",
-              alignItems: "center",
-            }}
-          >
-            <a href="#" style={{ color: "#6B7280", textDecoration: "none" }}>
-              Home
-            </a>
-            <span>/</span>
-            <a href="#" style={{ color: "#6B7280", textDecoration: "none" }}>
-              {genres[0] || "Fiction"}
-            </a>
-            <span>/</span>
-            <span style={{ color: "#2B2B2B" }}>{book.title}</span>
-          </div>
         </div>
       </header>
 
@@ -368,6 +366,12 @@ export default function DetailPage({
               }}
             >
               <button
+                onClick={() => {
+                  if (book.preview_link) {
+                    window.open(book.preview_link, "_blank");
+                  }
+                }}
+                disabled={!book.preview_link}
                 className="button-primary"
                 style={{
                   flex: 1,
@@ -376,15 +380,20 @@ export default function DetailPage({
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "0.5rem",
+                  opacity: book.preview_link ? 1 : 0.5,
+                  cursor: book.preview_link ? "pointer" : "not-allowed",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.02)";
+                  if (book.preview_link) {
+                    e.currentTarget.style.transform = "scale(1.02)";
+                  }
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "scale(1)";
                 }}
               >
-                📖 Read Preview
+                📖{" "}
+                {book.preview_link ? "Read Preview" : "Preview Not Available"}
               </button>
 
               <button
