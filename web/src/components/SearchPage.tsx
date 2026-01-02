@@ -292,30 +292,6 @@ export default function SearchPage({
             </p>
           </div>
         </div>
-        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          <button
-            style={{
-              background: "transparent",
-              border: "none",
-              fontSize: "1.25rem",
-              cursor: "pointer",
-            }}
-            title="Language"
-          >
-            🌐
-          </button>
-          <button
-            style={{
-              background: "transparent",
-              border: "none",
-              fontSize: "1.25rem",
-              cursor: "pointer",
-            }}
-            title="Profile"
-          >
-            👤
-          </button>
-        </div>
       </motion.header>
 
       <div
