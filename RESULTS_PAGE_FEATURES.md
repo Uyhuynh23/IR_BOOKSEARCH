@@ -3,9 +3,11 @@
 ## ✅ Completed Features
 
 ### ResultsPage Component - Fully Redesigned
+
 Based on the provided design mockup, the ResultsPage has been completely redesigned with the Vietnamese Tết theme.
 
 **Implemented UI Elements:**
+
 - ✅ Top navigation bar with back arrow, search input, bell icon, and profile icon
 - ✅ Results header: "Tìm thấy X cuốn sách cho 'query'"
 - ✅ Festive subtitle: "Khám phá những câu chuyện ly án điệp Tết này"
@@ -31,11 +33,13 @@ Based on the provided design mockup, the ResultsPage has been completely redesig
 **Current Status**: UI complete, data persistence needed
 
 **What's Working:**
+
 - Heart icon toggles between 🤍 (not favorited) and ❤️ (favorited)
 - State managed in component (Set of bookIDs)
 - Hover animation on heart button
 
 **What's Needed:**
+
 ```typescript
 // Option A: LocalStorage (Simple, client-side only)
 - Save favorites to localStorage on toggle
@@ -51,6 +55,7 @@ Based on the provided design mockup, the ResultsPage has been completely redesig
 ```
 
 **Implementation Steps:**
+
 1. Create a favorites context/hook for global state
 2. Add localStorage persistence layer
 3. Create a dedicated "My Favorites" page
@@ -67,6 +72,7 @@ Based on the provided design mockup, the ResultsPage has been completely redesig
 **Current Status**: UI complete, sorting logic not implemented
 
 **What's Working:**
+
 - Dropdown with 4 sort options:
   - Độ liên quan (Relevance)
   - Đánh giá cao nhất (Highest Rating)
@@ -75,22 +81,21 @@ Based on the provided design mockup, the ResultsPage has been completely redesig
 - State management for selected sort option
 
 **What's Needed:**
+
 ```typescript
 // Implement sorting functions
 const sortBooks = (books: Book[], sortBy: string): Book[] => {
   switch (sortBy) {
-    case 'relevance':
+    case "relevance":
       return books; // Keep original search API order
-    case 'rating':
+    case "rating":
       return [...books].sort((a, b) => b.average_rating - a.average_rating);
-    case 'year':
-      return [...books].sort((a, b) => 
-        parseInt(b.published_year) - parseInt(a.published_year)
+    case "year":
+      return [...books].sort(
+        (a, b) => parseInt(b.published_year) - parseInt(a.published_year)
       );
-    case 'title':
-      return [...books].sort((a, b) => 
-        a.title.localeCompare(b.title, 'vi')
-      );
+    case "title":
+      return [...books].sort((a, b) => a.title.localeCompare(b.title, "vi"));
     default:
       return books;
   }
@@ -98,6 +103,7 @@ const sortBooks = (books: Book[], sortBy: string): Book[] => {
 ```
 
 **Implementation Steps:**
+
 1. Add sorting logic to ResultsPage component
 2. Apply sort before pagination
 3. Add sort state to URL params for sharing
@@ -113,9 +119,11 @@ const sortBooks = (books: Book[], sortBy: string): Book[] => {
 **Current Status**: Icon placeholder only
 
 **What's Working:**
+
 - Bell icon (🔔) visible in top navigation
 
 **What's Needed:**
+
 ```typescript
 // Notification types
 interface Notification {
@@ -137,6 +145,7 @@ interface Notification {
 ```
 
 **Notification Ideas:**
+
 - "Sách Tết mới xuất bản trong thể loại yêu thích của bạn!"
 - "Giảm giá 20% cho sách văn học Việt Nam"
 - "Chúc mừng năm mới! Khám phá bộ sưu tập Tết đặc biệt"
@@ -151,55 +160,58 @@ interface Notification {
 **Current Status**: Filters set on SearchPage but not applied to results
 
 **What's Working:**
+
 - Filters state passed through App.tsx
 - Genre, author, rating, year range, language filters available
 
 **What's Needed:**
+
 ```typescript
 // Client-side filtering
 const applyFilters = (books: Book[], filters: SearchFilters): Book[] => {
-  return books.filter(book => {
+  return books.filter((book) => {
     // Genre filter
     if (filters.genres.length > 0) {
-      const bookGenres = book.google_category?.toLowerCase() || '';
-      const matchesGenre = filters.genres.some(g => 
+      const bookGenres = book.google_category?.toLowerCase() || "";
+      const matchesGenre = filters.genres.some((g) =>
         bookGenres.includes(g.toLowerCase())
       );
       if (!matchesGenre) return false;
     }
-    
+
     // Author filter
     if (filters.author) {
       if (!book.authors.toLowerCase().includes(filters.author.toLowerCase())) {
         return false;
       }
     }
-    
+
     // Rating filter
     if (book.average_rating < filters.minRating) {
       return false;
     }
-    
+
     // Year filter
     const year = parseInt(book.published_year);
     if (year < filters.yearMin || year > filters.yearMax) {
       return false;
     }
-    
+
     // Language filter
-    if (filters.language !== 'All') {
+    if (filters.language !== "All") {
       // Need to add language field to Book type
       if (book.language !== filters.language) {
         return false;
       }
     }
-    
+
     return true;
   });
 };
 ```
 
 **UI Enhancements:**
+
 - Show active filter tags above results
 - "X active filters" badge
 - Click tag to remove individual filter
@@ -215,6 +227,7 @@ const applyFilters = (books: Book[], filters: SearchFilters): Book[] => {
 **Current Status**: "Xem chi tiết" button exists but doesn't navigate
 
 **What's Needed:**
+
 ```typescript
 // Option A: Modal/Overlay (Simpler)
 - Click card/button opens modal with full details
@@ -230,6 +243,7 @@ const applyFilters = (books: Book[], filters: SearchFilters): Book[] => {
 ```
 
 **Detail Page Should Include:**
+
 - Full-size book cover
 - Complete description
 - All metadata (ISBN, publisher, page count, format)
@@ -252,12 +266,14 @@ const applyFilters = (books: Book[], filters: SearchFilters): Book[] => {
 **Current Status**: Basic pagination implemented
 
 **What's Working:**
+
 - Page numbers displayed
 - Previous/Next arrows
 - Ellipsis for large page counts
 - 12 books per page
 
 **What Could Be Enhanced:**
+
 ```typescript
 // Additional features:
 - "Show X per page" dropdown (12, 24, 48, All)
@@ -279,11 +295,13 @@ const applyFilters = (books: Book[], filters: SearchFilters): Book[] => {
 **Current Status**: Search input exists, submits to onSearchAgain
 
 **What's Working:**
+
 - Search input in top navigation
 - Clear button (✕) to empty input
 - Enter key or button submit
 
 **What's Needed:**
+
 - Apply current filters to new search
 - Show loading state during search
 - Preserve scroll position option
@@ -300,25 +318,26 @@ const applyFilters = (books: Book[], filters: SearchFilters): Book[] => {
 **Current Status**: Static mapping of categories to Vietnamese labels
 
 **What's Needed:**
+
 ```typescript
 // Expand category mapping
 const categoryMap = {
   // Current
-  'Fiction': { label: 'TIỂU THUYẾT', color: '#C41E3A' },
-  'Mystery': { label: 'TRINH THÁM', color: '#C41E3A' },
-  'Thriller': { label: 'KINH DỊ', color: '#8B0000' },
-  
+  Fiction: { label: "TIỂU THUYẾT", color: "#C41E3A" },
+  Mystery: { label: "TRINH THÁM", color: "#C41E3A" },
+  Thriller: { label: "KINH DỊ", color: "#8B0000" },
+
   // Add more
-  'Horror': { label: 'KINH DỊ', color: '#8B0000' },
-  'Comedy': { label: 'HÀI HƯỚC', color: '#FF9500' },
-  'Drama': { label: 'CHÍNH KỊCH', color: '#9370DB' },
-  'Adventure': { label: 'PHIÊU LƯU', color: '#FF6347' },
-  'Biography': { label: 'TIỂU SỬ', color: '#8B4513' },
-  'Self-Help': { label: 'PHÁT TRIỂN BẢN THÂN', color: '#1F7A63' },
-  'Poetry': { label: 'THƠ CA', color: '#FF69B4' },
-  'Children': { label: 'THIẾU NHI', color: '#FFD700' },
-  'Young Adult': { label: 'TUỔI TRẺ', color: '#FF69B4' },
-  'Tết': { label: 'TẾT', color: '#C41E3A', icon: '🧧' },
+  Horror: { label: "KINH DỊ", color: "#8B0000" },
+  Comedy: { label: "HÀI HƯỚC", color: "#FF9500" },
+  Drama: { label: "CHÍNH KỊCH", color: "#9370DB" },
+  Adventure: { label: "PHIÊU LƯU", color: "#FF6347" },
+  Biography: { label: "TIỂU SỬ", color: "#8B4513" },
+  "Self-Help": { label: "PHÁT TRIỂN BẢN THÂN", color: "#1F7A63" },
+  Poetry: { label: "THƠ CA", color: "#FF69B4" },
+  Children: { label: "THIẾU NHI", color: "#FFD700" },
+  "Young Adult": { label: "TUỔI TRẺ", color: "#FF69B4" },
+  Tết: { label: "TẾT", color: "#C41E3A", icon: "🧧" },
 };
 
 // Multiple badges per book
@@ -336,6 +355,7 @@ const categoryMap = {
 **Current Status**: Hardcoded suggestions
 
 **What's Needed:**
+
 ```typescript
 // Dynamic suggestions based on:
 - Current query keywords
@@ -348,21 +368,21 @@ const categoryMap = {
 // Example logic:
 const generateRelatedSearches = (query: string, results: Book[]) => {
   const suggestions = [];
-  
+
   // Extract common genres from results
   const genres = new Set();
   results.forEach(b => genres.add(b.google_category));
   suggestions.push(...Array.from(genres).slice(0, 2));
-  
+
   // Add seasonal
   if (isNearTet()) {
     suggestions.push('Sách Tết', 'Văn học Việt Nam');
   }
-  
+
   // Add query variations
   suggestions.push(`${query} tiểu thuyết`);
   suggestions.push(`${query} hay nhất`);
-  
+
   return suggestions.slice(0, 4);
 };
 ```
@@ -377,6 +397,7 @@ const generateRelatedSearches = (query: string, results: Book[]) => {
 **Current Status**: Basic empty state with icon and text
 
 **What Could Be Added:**
+
 - Custom Tết-themed illustration
 - Suggested searches to try
 - Link back to SearchPage with filters reset
@@ -392,6 +413,7 @@ const generateRelatedSearches = (query: string, results: Book[]) => {
 ## 🎯 Implementation Priority Roadmap
 
 ### Phase 1: Core Functionality (High Priority)
+
 1. ✅ Results page design - COMPLETE
 2. 🔴 Sort functionality - 2-3 hours
 3. 🔴 Apply filters to results - 4-5 hours
@@ -402,6 +424,7 @@ const generateRelatedSearches = (query: string, results: Book[]) => {
 ---
 
 ### Phase 2: User Experience (Medium Priority)
+
 5. 🟡 Favorites localStorage - 4-6 hours
 6. 🟡 Search from results page - 3-4 hours
 7. 🟡 Filter tags display - 2-3 hours
@@ -412,6 +435,7 @@ const generateRelatedSearches = (query: string, results: Book[]) => {
 ---
 
 ### Phase 3: Polish & Features (Low Priority)
+
 9. 🟢 Notification system - 8-12 hours
 10. 🟢 Related search intelligence - 4-6 hours
 11. 🟢 Pagination enhancements - 2-4 hours

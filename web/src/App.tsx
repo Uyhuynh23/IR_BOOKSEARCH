@@ -6,13 +6,13 @@ import ResultsPage from "./components/ResultsPage";
 import DetailPage from "./components/DetailPage";
 import "./style.css";
 
-type AppView = 'search' | 'results' | 'detail';
+type AppView = "search" | "results" | "detail";
 
 function App() {
   const [query, setQuery] = useState("");
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
-  const [currentView, setCurrentView] = useState<AppView>('search');
+  const [currentView, setCurrentView] = useState<AppView>("search");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [filters, setFilters] = useState<SearchFilters>({
     genres: [],
@@ -26,8 +26,8 @@ function App() {
   const handleSearch = async (searchQuery: string) => {
     if (!searchQuery.trim()) return;
     setLoading(true);
-    setCurrentView('results');
-    const results = await searchBooks(searchQuery);
+    setCurrentView("results");
+    const results = await searchBooks(searchQuery, filters);
     setBooks(results);
     setLoading(false);
   };
@@ -37,35 +37,35 @@ function App() {
   };
 
   const handleBackToSearch = () => {
-    setCurrentView('search');
+    setCurrentView("search");
     setSelectedBook(null);
   };
 
   const handleBackToResults = () => {
-    setCurrentView('results');
+    setCurrentView("results");
     setSelectedBook(null);
   };
 
   const handleSelectBook = (bookId: number) => {
-    const book = books.find(b => b.bookID === bookId);
+    const book = books.find((b) => b.bookID === bookId);
     if (book) {
       setSelectedBook(book);
-      setCurrentView('detail');
+      setCurrentView("detail");
     }
   };
 
   // Get related books (simple: same category, different book)
   const getRelatedBooks = (book: Book): Book[] => {
     return books
-      .filter(b => 
-        b.bookID !== book.bookID && 
-        b.google_category === book.google_category
+      .filter(
+        (b) =>
+          b.bookID !== book.bookID && b.google_category === book.google_category
       )
       .slice(0, 5);
   };
 
   // Show SearchPage
-  if (currentView === 'search') {
+  if (currentView === "search") {
     return (
       <SearchPage
         query={query}
@@ -80,22 +80,26 @@ function App() {
   // Show loading state
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#FFFDF8',
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            fontSize: '3rem',
-            marginBottom: '1rem',
-            animation: 'spin 2s linear infinite',
-          }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#FFFDF8",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              fontSize: "3rem",
+              marginBottom: "1rem",
+              animation: "spin 2s linear infinite",
+            }}
+          >
             🌸
           </div>
-          <p style={{ fontSize: '1.2rem', color: '#C41E3A', fontWeight: 600 }}>
+          <p style={{ fontSize: "1.2rem", color: "#C41E3A", fontWeight: 600 }}>
             Đang tìm kiếm sách...
           </p>
           <style>{`
@@ -110,7 +114,7 @@ function App() {
   }
 
   // Show DetailPage
-  if (currentView === 'detail' && selectedBook) {
+  if (currentView === "detail" && selectedBook) {
     return (
       <DetailPage
         book={selectedBook}

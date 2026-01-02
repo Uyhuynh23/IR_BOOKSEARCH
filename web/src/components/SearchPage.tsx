@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import type { SearchFilters } from "../types";
+import SearchBar from "./SearchBar";
 
 interface SearchPageProps {
   query: string;
@@ -18,14 +19,12 @@ export default function SearchPage({
 }: SearchPageProps) {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     onSearch(query);
   };
 
   const handleQuickSearch = (quickQuery: string) => {
     onChangeQuery(quickQuery);
-    onSearch(quickQuery);
   };
 
   const handleClearFilters = () => {
@@ -148,52 +147,14 @@ export default function SearchPage({
             Tìm sách hay – Khai xuân tri thức
           </p>
 
-          {/* Search Form */}
-          <form
+          {/* Search Bar Component */}
+          <SearchBar
+            query={query}
+            onChangeQuery={onChangeQuery}
             onSubmit={handleSubmit}
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              maxWidth: "700px",
-              margin: "0 auto 2rem",
-              background: "#fff",
-              padding: "0.5rem",
-              borderRadius: "50px",
-              boxShadow: "0 4px 16px rgba(196,30,58,0.12)",
-            }}
-          >
-            <span
-              style={{ fontSize: "1.25rem", padding: "0.75rem 0 0.75rem 1rem" }}
-            >
-              🔍
-            </span>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => onChangeQuery(e.target.value)}
-              placeholder="Nhập tên sách, tác giả hoặc mô tả…"
-              autoFocus
-              style={{
-                flex: 1,
-                border: "none",
-                background: "transparent",
-                fontSize: "1rem",
-                padding: "0.75rem 0.5rem",
-                outline: "none",
-                color: "#2B2B2B",
-              }}
-            />
-            <button
-              type="submit"
-              className="button-primary"
-              style={{
-                borderRadius: "50px",
-                padding: "0.75rem 2.5rem",
-              }}
-            >
-              Search
-            </button>
-          </form>
+            autoFocus
+            placeholder="Nhập tên sách, tác giả hoặc mô tả…"
+          />
 
           {/* Trending Quick Suggestions */}
           <div style={{ marginBottom: "2rem" }}>
@@ -448,7 +409,7 @@ export default function SearchPage({
                   style={{
                     display: "block",
                     fontWeight: 600,
-                    marginBottom: "0.5rem",
+                    marginBottom: "0.75rem",
                     color: "#2B2B2B",
                     fontSize: "0.95rem",
                   }}
@@ -458,37 +419,67 @@ export default function SearchPage({
                 <div
                   style={{ display: "flex", alignItems: "center", gap: "1rem" }}
                 >
-                  <input
-                    type="range"
-                    min={1900}
-                    max={new Date().getFullYear()}
-                    value={filters.yearMin}
-                    onChange={(e) =>
-                      onUpdateFilters({ yearMin: Number(e.target.value) })
-                    }
-                    style={{ flex: 1, margin: 0 }}
-                  />
+                  <div style={{ flex: 1 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "0.85rem",
+                        color: "#6B7280",
+                        marginBottom: "0.25rem",
+                      }}
+                    >
+                      From
+                    </label>
+                    <input
+                      type="number"
+                      min={1900}
+                      max={new Date().getFullYear()}
+                      value={filters.yearMin}
+                      onChange={(e) =>
+                        onUpdateFilters({ yearMin: Number(e.target.value) })
+                      }
+                      placeholder="1900"
+                      style={{
+                        width: "100%",
+                        margin: 0,
+                      }}
+                    />
+                  </div>
                   <span
                     style={{
-                      fontSize: "0.9rem",
-                      fontWeight: 600,
+                      fontSize: "1.2rem",
                       color: "#C41E3A",
-                      minWidth: "100px",
-                      textAlign: "center",
+                      marginTop: "1.5rem",
                     }}
                   >
-                    {filters.yearMin} – {filters.yearMax}
+                    –
                   </span>
-                  <input
-                    type="range"
-                    min={1900}
-                    max={new Date().getFullYear()}
-                    value={filters.yearMax}
-                    onChange={(e) =>
-                      onUpdateFilters({ yearMax: Number(e.target.value) })
-                    }
-                    style={{ flex: 1, margin: 0 }}
-                  />
+                  <div style={{ flex: 1 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "0.85rem",
+                        color: "#6B7280",
+                        marginBottom: "0.25rem",
+                      }}
+                    >
+                      To
+                    </label>
+                    <input
+                      type="number"
+                      min={1900}
+                      max={new Date().getFullYear()}
+                      value={filters.yearMax}
+                      onChange={(e) =>
+                        onUpdateFilters({ yearMax: Number(e.target.value) })
+                      }
+                      placeholder={String(new Date().getFullYear())}
+                      style={{
+                        width: "100%",
+                        margin: 0,
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -532,15 +523,6 @@ export default function SearchPage({
                       ⭐
                     </button>
                   ))}
-                  <span
-                    style={{
-                      marginLeft: "0.5rem",
-                      fontSize: "0.9rem",
-                      color: "#6B7280",
-                    }}
-                  >
-                    & Up
-                  </span>
                 </div>
               </div>
 
