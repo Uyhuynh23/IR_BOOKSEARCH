@@ -13,6 +13,8 @@ import {
   calculateReadingTime,
   type GoogleBookDetails,
 } from "../utils/googleBooksApi";
+import { fetchSmartRelatedBooks } from "../utils/relatedBooks";
+import { fetchBookById } from "../utils/bookApi";
 
 interface DetailPageProps {
   book: Book;
@@ -22,11 +24,12 @@ interface DetailPageProps {
 }
 
 export default function DetailPage({
-  book,
+  book: initialBook,
   relatedBooks = [],
   onBack,
   onSelectBook,
 }: DetailPageProps) {
+  const [book, setBook] = useState(initialBook);
   const [activeTab, setActiveTab] = useState<
     "description" | "metadata" | "reviews"
   >("description");
@@ -49,7 +52,10 @@ export default function DetailPage({
   >([]);
   const [googleData, setGoogleData] = useState<GoogleBookDetails | null>(null);
   const [loadingGoogleData, setLoadingGoogleData] = useState(true);
+  const [smartRelatedBooks, setSmartRelatedBooks] = useState<Book[]>(relatedBooks);
+  const [loadingRelatedBooks, setLoadingRelatedBooks] = useState(false);
   const googleDataCacheRef = useRef<Record<string, GoogleBookDetails | null>>({});
+  const relatedBooksCache = useRef<Record<number, Book[]>>({});
 
   const genres = book.google_category
     ? book.google_category
@@ -78,10 +84,41 @@ export default function DetailPage({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Update book state when prop changes
+  useEffect(() => {
+    setBook(initialBook);
+  }, [initialBook.bookID, initialBook.book_id]);
+
   // Scroll to top when book changes
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [book.bookID, book.book_id]);
+
+  // Fetch full book data if this is a placeholder from a recommendation
+  useEffect(() => {
+    async function loadFullBookData() {
+      // Check if this is a placeholder book (title is "Loading...")
+      if (book.title !== "Loading...") {
+        return; // Already have full data
+      }
+
+      const bookId = book.bookID || book.book_id;
+      if (!bookId) return;
+
+      console.log("📚 Fetching full book data for placeholder ID:", bookId);
+      const fullBook = await fetchBookById(bookId);
+
+      if (fullBook) {
+        console.log("✅ Loaded full book data:", fullBook.title);
+        // Update book state with full data
+        setBook(fullBook);
+      } else {
+        console.warn("❌ Failed to load full book data");
+      }
+    }
+
+    loadFullBookData();
+  }, [book.bookID, book.book_id, book.title]);
 
   // Track scroll for sticky bar
   useEffect(() => {
@@ -122,6 +159,13 @@ export default function DetailPage({
   useEffect(() => {
     async function loadGoogleData() {
       const cacheKey = `${book.clean_isbn}-${book.title}`;
+      
+      // Check if this is a placeholder book (no ISBN or empty title)
+      if (!book.clean_isbn || book.title === "Loading...") {
+        console.log("⚠️ Placeholder book detected, skipping Google data fetch until full data loads");
+        setLoadingGoogleData(false);
+        return;
+      }
       
       // Check if data is already cached
       if (googleDataCacheRef.current[cacheKey] !== undefined) {
@@ -165,6 +209,58 @@ export default function DetailPage({
     }
     loadGoogleData();
   }, [book.clean_isbn, book.title, book.num_pages, book.language, book.description]);
+
+  // Fetch smart related books from backend
+  useEffect(() => {
+    async function loadSmartRelatedBooks() {
+      const bookId = book.bookID || book.book_id;
+      if (!bookId) {
+        console.log("❌ No book ID found");
+        setSmartRelatedBooks(relatedBooks);
+        return;
+      }
+
+      // Check if already cached
+      if (relatedBooksCache.current[bookId]) {
+        console.log("✅ Using cached related books:", relatedBooksCache.current[bookId].length);
+        setSmartRelatedBooks(relatedBooksCache.current[bookId]);
+        return;
+      }
+
+      // Show fallback immediately for fast UX
+      console.log("⚡ Showing fallback books immediately:", relatedBooks.length);
+      setSmartRelatedBooks(relatedBooks);
+      setLoadingRelatedBooks(true);
+      
+      // Fetch smart recommendations in background with timeout
+      try {
+        const timeoutPromise = new Promise<null>((resolve) => {
+          setTimeout(() => resolve(null), 3000); // 3 second timeout
+        });
+
+        const related = await Promise.race([
+          fetchSmartRelatedBooks(bookId, 5),
+          timeoutPromise
+        ]);
+
+        if (related && related.length > 0) {
+          console.log("📚 Smart recommendations received:", related.length, "books");
+          relatedBooksCache.current[bookId] = related;
+          setSmartRelatedBooks(related);
+        } else {
+          console.log("📚 Smart recommendations timed out or empty, using fallback");
+          relatedBooksCache.current[bookId] = relatedBooks;
+        }
+      } catch (error) {
+        console.warn("❌ Error fetching smart recommendations:", error);
+        relatedBooksCache.current[bookId] = relatedBooks;
+      } finally {
+        setLoadingRelatedBooks(false);
+      }
+    }
+
+    loadSmartRelatedBooks();
+  }, [book.bookID, book.book_id, relatedBooks]); // Added relatedBooks back since we use it as initial
 
   const handleReadingListToggle = () => {
     const newValue = readingList === "favorite" ? "none" : "favorite";
@@ -371,7 +467,14 @@ export default function DetailPage({
           />
         </div>
 
-        <RelatedBooks books={relatedBooks} onSelectBook={onSelectBook} />
+        <RelatedBooks 
+          books={smartRelatedBooks} 
+          onSelectBook={(bookId) => {
+            console.log("📖 Clicking related book ID:", bookId);
+            onSelectBook?.(bookId);
+          }} 
+          loading={loadingRelatedBooks} 
+        />
 
         {/* Decorative corner blossom */}
         <div

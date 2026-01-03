@@ -56,9 +56,30 @@ function App() {
   const handleSelectBook = (bookId: number) => {
     // Save scroll position before navigating away from results
     setScrollPosition(window.scrollY);
-    const book = books.find((b) => (b.bookID || b.book_id) === bookId);
+    
+    // First, check if book is in current results
+    let book = books.find((b) => (b.bookID || b.book_id) === bookId);
+    
     if (book) {
       setSelectedBook(book);
+      setCurrentView("detail");
+    } else {
+      // If not found in current results, create a placeholder with just the ID
+      // The detail page will load the full data from the recommendation API
+      console.log("⚠️ Book", bookId, "not in current results, using placeholder");
+      const placeholderBook: Book = {
+        bookID: bookId,
+        title: "Loading...",
+        authors: "",
+        average_rating: 0,
+        clean_isbn: "",
+        description: "",
+        published_year: "",
+        thumbnail: "",
+        google_category: "",
+        preview_link: "",
+      };
+      setSelectedBook(placeholderBook);
       setCurrentView("detail");
     }
   };

@@ -3,13 +3,15 @@ import type { Book } from "../../types";
 interface RelatedBooksProps {
   books: Book[];
   onSelectBook?: (bookId: number) => void;
+  loading?: boolean;
 }
 
 export default function RelatedBooks({
   books,
   onSelectBook,
+  loading = false,
 }: RelatedBooksProps) {
-  if (books.length === 0) return null;
+  if (books.length === 0 && !loading) return null;
 
   return (
     <>
@@ -42,10 +44,16 @@ export default function RelatedBooks({
           marginBottom: "3rem",
         }}
       >
-        {books.slice(0, 5).map((relatedBook) => (
+        {loading ? (
+          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "2rem" }}>
+            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🔄</div>
+            <p style={{ color: "#6B7280", margin: 0 }}>Finding recommendations...</p>
+          </div>
+        ) : (
+          books.slice(0, 5).map((relatedBook) => (
           <div
-            key={relatedBook.bookID}
-            onClick={() => onSelectBook?.(relatedBook.bookID)}
+            key={relatedBook.bookID || relatedBook.book_id}
+            onClick={() => onSelectBook?.((relatedBook.bookID || relatedBook.book_id || 0))}
             style={{
               background: "#fff",
               borderRadius: "12px",
@@ -129,12 +137,18 @@ export default function RelatedBooks({
                     fontWeight: 600,
                   }}
                 >
-                  {relatedBook.average_rating}
+                  {typeof relatedBook.average_rating === 'number' 
+                    ? relatedBook.average_rating.toFixed(1) 
+                    : typeof relatedBook.rating === 'number' 
+                    ? relatedBook.rating.toFixed(1) 
+                    : "N/A"}
                 </span>
               </div>
             </div>
           </div>
-        ))}
+        ))
+        )}
+
       </div>
     </>
   );

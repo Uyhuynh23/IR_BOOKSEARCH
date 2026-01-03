@@ -235,20 +235,139 @@ def search_endpoint():
 def recommend_endpoint():
     data = request.json
     liked_ids = data.get('liked_ids', [])
+    limit = data.get('limit', 10)
     valid_ids = [int(i) for i in liked_ids if str(i).isdigit()]
 
-    if not valid_ids: return jsonify([])
+    if not valid_ids: 
+        return jsonify([])
 
     try:
-        hits = client.recommend(
-            collection_name=COLLECTION_NAME,
-            positive=valid_ids,
-            limit=10
-        )
-        return jsonify([hit.payload for hit in hits])
+        # For each liked book ID, search for similar books
+        all_recommendations = {}
+        
+        for book_id in valid_ids:
+            try:
+                # Use scroll with filter to find the specific book (much faster than scrolling all)
+                scroll_result = client.scroll(
+                    collection_name=COLLECTION_NAME,
+                    scroll_filter=Filter(
+                        should=[
+                            FieldCondition(key="bookID", match=MatchValue(value=book_id)),
+                            FieldCondition(key="book_id", match=MatchValue(value=book_id))
+                        ]
+                    ),
+                    limit=1,
+                    with_vectors=True
+                )
+                
+                points = scroll_result[0]
+                if not points or len(points) == 0:
+                    print(f"⚠️ Book ID {book_id} not found in collection")
+                    continue
+                
+                target_point = points[0]
+                print(f"✅ Found book {book_id} at Point ID: {target_point.id}")
+                
+                if not target_point.vector:
+                    print(f"⚠️ Book ID {book_id} has no vector embedding")
+                    continue
+                
+                # Search for similar books based on embedding using query_points
+                try:
+                    hits = client.query_points(
+                        collection_name=COLLECTION_NAME,
+                        query=target_point.vector,
+                        limit=limit + 1,
+                        score_threshold=0.3,  # Lower threshold for more results
+                        with_payload=True
+                    ).points
+                    print(f"✅ query_points returned {len(hits)} results")
+                except Exception as e1:
+                    print(f"⚠️ query_points failed: {e1}, trying search...")
+                    try:
+                        # Fallback: try search method
+                        hits = client.search(
+                            collection_name=COLLECTION_NAME,
+                            query_vector=target_point.vector,
+                            limit=limit + 1,
+                            score_threshold=0.3
+                        )
+                        print(f"✅ search returned {len(hits)} results")
+                    except Exception as e2:
+                        print(f"❌ Both methods failed: {e2}")
+                        continue
+                
+                for hit in hits:
+                    book_id_key = hit.payload.get('bookID') or hit.payload.get('book_id')
+                    # Skip the book itself
+                    if book_id_key != book_id:
+                        payload = hit.payload
+                        
+                        # Normalize field names (same as search_engine)
+                        if 'bookID' in payload and 'book_id' not in payload:
+                            payload['book_id'] = payload['bookID']
+                        
+                        if 'rating' in payload and 'average_rating' not in payload:
+                            payload['average_rating'] = payload['rating']
+                        if 'year' in payload and 'published_year' not in payload:
+                            payload['published_year'] = str(payload['year'])
+                        if 'categories' in payload and 'google_category' not in payload:
+                            payload['google_category'] = payload['categories']
+                        
+                        all_recommendations[book_id_key] = payload
+            except Exception as e:
+                print(f"❌ Error processing book {book_id}: {e}")
+                continue
+        
+        result = list(all_recommendations.values())[:limit]
+        print(f"📚 Returning {len(result)} recommendations")
+        return jsonify(result)
     except Exception as e:
         print(f"⚠️ Lỗi Recommend: {e}")
         return jsonify([])
+
+@app.route('/book/<int:book_id>', methods=['GET'])
+def get_book_endpoint(book_id):
+    """Get a single book by ID with all fields and field normalization"""
+    try:
+        # Use scroll with filter to find the specific book
+        scroll_result = client.scroll(
+            collection_name=COLLECTION_NAME,
+            scroll_filter=Filter(
+                should=[
+                    FieldCondition(key="bookID", match=MatchValue(value=book_id)),
+                    FieldCondition(key="book_id", match=MatchValue(value=book_id))
+                ]
+            ),
+            limit=1,
+            with_vectors=False  # Don't need vectors for detail view
+        )
+        
+        points = scroll_result[0]
+        if not points or len(points) == 0:
+            print(f"⚠️ Book ID {book_id} not found")
+            return jsonify(None), 404
+        
+        payload = points[0].payload
+        
+        # Normalize field names to match search_engine output
+        if 'bookID' in payload and 'book_id' not in payload:
+            payload['book_id'] = payload['bookID']
+        
+        # Map field names to match Frontend expectations (same as search_engine)
+        if 'rating' in payload and 'average_rating' not in payload:
+            payload['average_rating'] = payload['rating']
+        if 'year' in payload and 'published_year' not in payload:
+            payload['published_year'] = str(payload['year'])
+        if 'categories' in payload and 'google_category' not in payload:
+            payload['google_category'] = payload['categories']
+        
+        print(f"✅ Fetched book {book_id}: {payload.get('title', 'Unknown')}")
+        print(f"   Available fields: {list(payload.keys())}")
+        return jsonify(payload)
+    except Exception as e:
+        print(f"❌ Error fetching book {book_id}: {e}")
+        return jsonify(None), 500
 
 if __name__ == '__main__':
     # 🔥 QUAN TRỌNG: Chạy port 5001 để tránh xung đột trên MacOS

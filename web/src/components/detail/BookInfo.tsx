@@ -111,7 +111,7 @@ export default function BookInfo({
             key={genre}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.8 + idx * 0.1, type: "spring" }}
+            transition={{ delay: 0.5 + idx * 0.1, type: "spring" }}
             style={{
               background: "#FFE5E5",
               color: "#C41E3A",
@@ -167,7 +167,13 @@ export default function BookInfo({
         />
         <MetadataField
           label="LANGUAGE"
-          value={formatLanguage(googleData?.language)}
+          value={
+            googleData?.language 
+              ? formatLanguage(googleData.language)
+              : book.language 
+                ? formatLanguage(book.language)
+                : "English" // Default to English if not specified
+          }
           loading={loadingGoogleData}
         />
         <MetadataField
@@ -181,7 +187,7 @@ export default function BookInfo({
         />
         <MetadataField
           label="PUBLISHER"
-          value={googleData?.publisher || "Unknown"}
+          value={googleData?.publisher || book.publisher || "Unknown"}
           loading={loadingGoogleData}
         />
       </div>
