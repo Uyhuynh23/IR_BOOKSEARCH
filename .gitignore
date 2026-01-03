@@ -177,6 +177,14 @@ server/books_metadata.pkl
 server/bm25_index.pkl
 server/faiss_index.bin
 
+# Qdrant vector database
+server/qdrant_db/
+!server/qdrant_db/.gitkeep
+
+# Old indices/backups
+server/old_index/
+server/.lock
+
 # ========================
 # Logs
 # ========================
