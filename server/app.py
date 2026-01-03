@@ -1,254 +1,256 @@
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import pandas as pd
-import numpy as np
-import faiss
-import pickle
-import string
-import os
-
+from qdrant_client import QdrantClient
+from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchText, Range
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
 app = Flask(__name__)
-CORS(app) # Cho phép Frontend (React) gọi API này
+CORS(app) # Cho phép mọi nguồn (Frontend React/Nextjs) gọi API
 
-# --- LOAD RESOURCES (Chạy 1 lần khi server start) ---
-print("⏳ Loading indexes...")
+# ==========================================
+# 1. CẤU HÌNH HỆ THỐNG
+# ==========================================
+current_dir = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(current_dir, 'qdrant_db') 
+COLLECTION_NAME = "books_hybrid"
+
+# Tên Model (Sẽ tự tải về máy nếu chưa có)
+BI_MODEL_NAME = 'all-MiniLM-L6-v2'
+CROSS_MODEL_NAME = 'cross-encoder/ms-marco-MiniLM-L-6-v2'
+
+print("⏳ Đang khởi động Server...")
+
+# ==========================================
+# 2. KẾT NỐI DATABASE & AI MODELS
+# ==========================================
+
+# --- A. Kết nối Qdrant Database ---
+print(f"📂 Đang kết nối Qdrant tại: {DB_PATH}")
+
+if os.path.exists(DB_PATH):
+    client = QdrantClient(path=DB_PATH)
+    # Kiểm tra ngay xem DB có dữ liệu không
+    try:
+        col_info = client.get_collection(COLLECTION_NAME)
+        print(f"✅ Đã tìm thấy Collection '{COLLECTION_NAME}'")
+        print(f"📊 Số lượng vectors hiện có: {col_info.points_count}")
+        
+        if col_info.points_count == 0:
+            print("⚠️ CẢNH BÁO: Kết nối thành công nhưng Database đang RỖNG!")
+    except Exception as e:
+        print(f"❌ LỖI NGHIÊM TRỌNG: Không tìm thấy Collection '{COLLECTION_NAME}'.")
+        print("👉 Gợi ý: Kiểm tra xem file zip từ Kaggle đã giải nén đúng cấu trúc chưa.")
+else:
+    print("❌ LỖI: Không tìm thấy thư mục 'qdrant_db'. Đang chạy ở chế độ RAM (sẽ không có dữ liệu).")
+    client = QdrantClient(":memory:") 
+
+# --- B. Load Model AI ---
+print("🧠 Đang tải AI Models (Lần đầu chạy sẽ mất 1-2 phút)...")
 try:
-    # 1. Load Data & Index
-    df = pd.read_pickle("books_metadata.pkl")
-    df = df.fillna("") # Fix lỗi NaN khi chuyển sang JSON
-    
-    with open("bm25_index.pkl", "rb") as f:
-        bm25 = pickle.load(f)
-    
-    index = faiss.read_index("faiss_index.bin")
-    
-    # Lấy đường dẫn hiện tại của file app.py
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # 2. Load Bi-Encoder (OFFLINE)
-    # Sửa lại để trỏ vào thư mục models/bi-encoder
-    bi_model_path = os.path.join(current_dir, 'models', 'bi-encoder')
-    print(f"Loading Bi-Encoder from: {bi_model_path}")
-    
-    # Kiểm tra xem thư mục có tồn tại không trước khi load
-    if os.path.exists(bi_model_path):
-        bi_encoder = SentenceTransformer(bi_model_path)
-    else:
-        print("⚠️ Không tìm thấy folder offline, đang thử tải online...")
-        bi_encoder = SentenceTransformer('all-MiniLM-L6-v2')
-
-    # 3. Load Cross-Encoder (OFFLINE)
-    cross_model_path = os.path.join(current_dir, 'models', 'cross-encoder')
-    print(f"Loading Cross-Encoder from: {cross_model_path}")
-    cross_encoder = CrossEncoder(cross_model_path)
-    
-    print("✅ System Ready!")
-
+    bi_encoder = SentenceTransformer(BI_MODEL_NAME)
+    cross_encoder = CrossEncoder(CROSS_MODEL_NAME)
+    print("✅ AI Models đã sẵn sàng!")
 except Exception as e:
-    print(f"❌ Error loading files: {e}")
-    # Có thể exit luôn nếu lỗi model quan trọng
-    # exit(1) 
+    print(f"❌ Lỗi tải Model: {e}")
 
-# --- SEARCH LOGIC ---
+# ==========================================
+# 3. CÔNG CỤ TẠO BỘ LỌC (FILTER)
+# ==========================================
+def build_qdrant_filter(filters):
+    """Chuyển tham số từ URL thành Qdrant Filter"""
+    if not filters: return None
+    
+    must_conditions = []
+
+    # 1. Genres (Thể loại)
+    if filters.get('genres') and len(filters['genres']) > 0:
+        should_conditions = []
+        for genre in filters['genres']:
+            should_conditions.append(
+                FieldCondition(key="categories", match=MatchText(text=genre))
+            )
+        must_conditions.append(Filter(should=should_conditions))
+
+    # 2. Author (Tác giả)
+    if filters.get('author'):
+        must_conditions.append(
+            FieldCondition(key="authors", match=MatchText(text=filters['author']))
+        )
+
+    # 3. Năm xuất bản
+    if filters.get('yearMin') or filters.get('yearMax'):
+        range_params = {}
+        if filters.get('yearMin'): range_params['gte'] = filters['yearMin']
+        if filters.get('yearMax'): range_params['lte'] = filters['yearMax']
+        must_conditions.append(
+            FieldCondition(key="year", range=Range(**range_params))
+        )
+
+    # 4. Đánh giá (Rating)
+    if filters.get('minRating'):
+        must_conditions.append(
+            FieldCondition(key="rating", range=Range(gte=filters['minRating']))
+        )
+
+    # 5. Ngôn ngữ
+    if filters.get('language') and filters['language'].lower() != 'all':
+         must_conditions.append(
+             FieldCondition(key="language", match=MatchValue(value=filters['language']))
+         )
+
+    if not must_conditions: return None
+    return Filter(must=must_conditions)
+
+
+# ==========================================
+# 4. HÀM TÌM KIẾM CHÍNH (SEARCH ENGINE)
+# ==========================================
 def search_engine(query, top_k=20, filters=None):
-    """
-    Search engine with filter support
-    Args:
-        query: search query string
-        top_k: number of initial candidates
-        filters: dict with genres, author, minRating, yearMin, yearMax, language
-    """
-    print(f"🔍 Search query: {query}")
-    print(f"🔍 Filters: {filters}")
-    
-    # 1. BM25 (Keyword)
-    tokenized_query = query.lower().translate(str.maketrans('', '', string.punctuation)).split()
-    bm25_scores = bm25.get_scores(tokenized_query)
-    bm25_top_n = np.argsort(bm25_scores)[::-1][:top_k]
-    
-    # 2. FAISS (Semantic)
-    query_vector = bi_encoder.encode([query])
-    faiss.normalize_L2(query_vector)
-    _, faiss_top_n = index.search(query_vector, top_k)
-    faiss_top_n = faiss_top_n[0]
-    
-    # 3. Fusion (Gộp kết quả)
-    candidate_indices = list(set(bm25_top_n) | set(faiss_top_n))
-    print(f"📊 Initial candidates: {len(candidate_indices)}")
-    
-    # 4. Apply Filters BEFORE Reranking (if provided) - Progressive filtering
-    if filters:
-        last_valid_indices = candidate_indices.copy()  # Keep track of last valid result
-        
-        # Filter 1: Genres
-        if filters.get('genres') and len(filters['genres']) > 0:
-            filtered_indices = []
-            for idx in candidate_indices:
-                book = df.iloc[idx]
-                book_genres = str(book.get('google_category', '')).lower()
-                # Include books with empty categories, or matching categories
-                if not book_genres or book_genres == 'nan' or any(genre.lower() in book_genres for genre in filters['genres']):
-                    filtered_indices.append(idx)
-            
-            if filtered_indices:  # Only apply if we still have results
-                candidate_indices = filtered_indices
-                last_valid_indices = candidate_indices.copy()
-                print(f"📊 After genre filter: {len(candidate_indices)} results")
-            else:
-                print(f"⚠️ Genre filter would return 0 results, keeping {len(last_valid_indices)} previous results")
-        
-        # Filter 2: Author
-        if filters.get('author'):
-            filtered_indices = []
-            for idx in candidate_indices:
-                book = df.iloc[idx]
-                book_author = str(book.get('authors', '')).lower()
-                if filters['author'].lower() in book_author:
-                    filtered_indices.append(idx)
-            
-            if filtered_indices:
-                candidate_indices = filtered_indices
-                last_valid_indices = candidate_indices.copy()
-                print(f"📊 After author filter: {len(candidate_indices)} results")
-            else:
-                print(f"⚠️ Author filter would return 0 results, keeping {len(last_valid_indices)} previous results")
-        
-        # Filter 3: Year Range
-        if filters.get('yearMin') or filters.get('yearMax'):
-            filtered_indices = []
-            for idx in candidate_indices:
-                book = df.iloc[idx]
-                book_year = book.get('publishedDate', '')
-                try:
-                    year = int(str(book_year)[:4]) if book_year else 0
-                    if filters.get('yearMin') and year < filters['yearMin']:
-                        continue
-                    if filters.get('yearMax') and year > filters['yearMax']:
-                        continue
-                    filtered_indices.append(idx)
-                except:
-                    pass
-            
-            if filtered_indices:
-                candidate_indices = filtered_indices
-                last_valid_indices = candidate_indices.copy()
-                print(f"📊 After year filter: {len(candidate_indices)} results")
-            else:
-                print(f"⚠️ Year filter would return 0 results, keeping {len(last_valid_indices)} previous results")
-        
-        # Filter 4: Minimum Rating
-        if filters.get('minRating') and filters['minRating'] > 0:
-            filtered_indices = []
-            for idx in candidate_indices:
-                book = df.iloc[idx]
-                book_rating = book.get('averageRating', 0)
-                if book_rating >= filters['minRating']:
-                    filtered_indices.append(idx)
-            
-            if filtered_indices:
-                candidate_indices = filtered_indices
-                last_valid_indices = candidate_indices.copy()
-                print(f"📊 After rating filter: {len(candidate_indices)} results")
-            else:
-                print(f"⚠️ Rating filter would return 0 results, keeping {len(last_valid_indices)} previous results")
-        
-        # Filter 5: Language
-        if filters.get('language') and filters['language'] != 'All':
-            filtered_indices = []
-            for idx in candidate_indices:
-                book = df.iloc[idx]
-                book_lang = str(book.get('language', '')).lower()
-                if filters['language'].lower() in book_lang:
-                    filtered_indices.append(idx)
-            
-            if filtered_indices:
-                candidate_indices = filtered_indices
-                last_valid_indices = candidate_indices.copy()
-                print(f"📊 After language filter: {len(candidate_indices)} results")
-            else:
-                print(f"⚠️ Language filter would return 0 results, keeping {len(last_valid_indices)} previous results")
-        
-        # Use the last valid result
-        candidate_indices = last_valid_indices
-        print(f"✅ Final candidates after progressive filtering: {len(candidate_indices)} results")
-    
-    # If still no results (shouldn't happen with progressive filtering), return empty
-    if not candidate_indices:
-        print("❌ No results found")
+    # Bước 1: Encode Query -> Vector
+    try:
+        vector = bi_encoder.encode(query).tolist()
+    except Exception as e:
+        print(f"❌ Lỗi encode: {e}")
         return []
-    
-    # 5. Rerank (Chấm điểm lại bằng Cross-Encoder)
-    candidates_text = [df.iloc[idx]['search_text'] for idx in candidate_indices]
-    cross_input = [[query, doc_text] for doc_text in candidates_text]
-    cross_scores = cross_encoder.predict(cross_input)
-    
-    # 6. Format kết quả
-    results = []
-    for i, idx in enumerate(candidate_indices):
-        results.append({'index': idx, 'score': float(cross_scores[i])}) 
-        
-    results = sorted(results, key=lambda x: x['score'], reverse=True)[:10]
-    final_indices = [item['index'] for item in results]
-    
-    # Trả về JSON
-    return df.iloc[final_indices].to_dict('records')
 
-# --- API ROUTE ---
-@app.route('/search', methods=['GET'])
-def search_endpoint():
-    query = request.args.get('q', '')
-    if not query:
-        return jsonify({"error": "Query is required"}), 400
-    
-    # Parse filter parameters
-    filters = {}
-    
-    # Genres (comma-separated)
-    genres = request.args.get('genres', '')
-    if genres:
-        filters['genres'] = [g.strip() for g in genres.split(',') if g.strip()]
-    
-    # Author
-    author = request.args.get('author', '')
-    if author:
-        filters['author'] = author
-    
-    # Year range
-    year_min = request.args.get('yearMin', '')
-    if year_min:
-        try:
-            filters['yearMin'] = int(year_min)
-        except ValueError:
-            pass
-    
-    year_max = request.args.get('yearMax', '')
-    if year_max:
-        try:
-            filters['yearMax'] = int(year_max)
-        except ValueError:
-            pass
-    
-    # Minimum rating
-    min_rating = request.args.get('minRating', '')
-    if min_rating:
-        try:
-            filters['minRating'] = float(min_rating)
-        except ValueError:
-            pass
-    
-    # Language
-    language = request.args.get('language', '')
-    if language:
-        filters['language'] = language
+    # Bước 2: Search Qdrant (Code tương thích mọi version)
+    q_filter = build_qdrant_filter(filters)
     
     try:
-        results = search_engine(query, filters=filters if filters else None)
-        return jsonify(results)
+        # Kiểm tra xem client có hàm 'search' mới không, nếu không dùng 'search_points'
+        if hasattr(client, 'search'):
+            search_result = client.search(
+                collection_name=COLLECTION_NAME,
+                query_vector=vector,
+                query_filter=q_filter,
+                limit=50
+            )
+        else:
+            # FALLBACK: Dùng cho phiên bản cũ hơn
+            search_result = client.search_points(
+                collection_name=COLLECTION_NAME,
+                vector=vector,       # Bản cũ dùng 'vector' thay vì 'query_vector'
+                filter=q_filter,     # Bản cũ dùng 'filter' thay vì 'query_filter'
+                limit=50,
+                with_payload=True
+            )
     except Exception as e:
-        print(f"Search Error: {e}")
-        return jsonify({"error": "Internal Server Error"}), 500
+        print(f"❌ Lỗi Qdrant Search: {e}")
+        # Cố gắng vớt vát lần cuối với cú pháp cổ điển
+        try:
+             search_result, _ = client.scroll(
+                collection_name=COLLECTION_NAME,
+                scroll_filter=q_filter,
+                limit=50
+            )
+        except:
+            return []
+
+    if not search_result:
+        return []
+
+    # Bước 3: Chuẩn bị dữ liệu cho Rerank
+    candidates = []
+    for hit in search_result:
+        item = hit.payload
+        # Tạo đoạn văn mô tả để AI đọc hiểu
+        text_for_rerank = f"{item.get('title', '')} by {item.get('authors','')}. {item.get('description', '')[:300]}"
+        
+        candidates.append({
+            'payload': item,
+            'rerank_text': text_for_rerank
+        })
+
+    # Bước 4: Reranking (Chấm điểm lại bằng Cross-Encoder)
+    if not candidates: return []
+
+    cross_inputs = [[query, c['rerank_text']] for c in candidates]
+    cross_scores = cross_encoder.predict(cross_inputs)
+
+    # Gán điểm mới và chuẩn hóa tên field cho Frontend
+    for i, candidate in enumerate(candidates):
+        payload = candidate['payload']
+        payload['score'] = float(cross_scores[i])
+        
+        # Chuẩn hóa các field name để match với TypeScript interface
+        if 'bookID' in payload and 'book_id' not in payload:
+            payload['book_id'] = payload['bookID']
+        
+        # Map từ tên field trong DB -> tên field Frontend expect
+        if 'rating' in payload:
+            payload['average_rating'] = payload['rating']
+        if 'year' in payload:
+            payload['published_year'] = str(payload['year'])
+        if 'categories' in payload:
+            payload['google_category'] = payload['categories']
+
+    # Sắp xếp giảm dần theo điểm mới
+    ranked_results = sorted(candidates, key=lambda x: x['payload']['score'], reverse=True)
+
+    # Trả về Top K kết quả tốt nhất
+    return [x['payload'] for x in ranked_results[:top_k]]
+
+# ==========================================
+# 5. API ENDPOINTS
+# ==========================================
+@app.route('/search', methods=['GET'])
+def search_endpoint():
+    query = request.args.get('q', '').strip()
+    
+    # Lấy các tham số filter từ URL
+    filters = {}
+    genres = request.args.get('genres', '')
+    if genres and genres.lower() != 'all':
+        filters['genres'] = [g.strip() for g in genres.split(',') if g.strip()]
+    
+    if request.args.get('author'): filters['author'] = request.args.get('author')
+    
+    try:
+        if request.args.get('yearMin'): filters['yearMin'] = int(request.args.get('yearMin'))
+        if request.args.get('yearMax'): filters['yearMax'] = int(request.args.get('yearMax'))
+        if request.args.get('minRating'): filters['minRating'] = float(request.args.get('minRating'))
+    except: pass
+
+    lang = request.args.get('language', '')
+    if lang: filters['language'] = lang
+
+    try:
+        # Allow search with filters only (empty query) if filters are provided
+        if not query and not filters:
+            return jsonify({"error": "Vui lòng nhập từ khóa tìm kiếm hoặc chọn bộ lọc"}), 400
+        
+        # If query is empty but filters exist, use a wildcard search
+        search_query = query if query else "*"
+        
+        print(f"🔍 Đang tìm: '{search_query}' | Filters: {filters}")
+        results = search_engine(search_query, filters=filters)
+        return jsonify(results)
+    
+    except Exception as e:
+        print(f"❌ Server Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/recommend', methods=['POST'])
+def recommend_endpoint():
+    data = request.json
+    liked_ids = data.get('liked_ids', [])
+    valid_ids = [int(i) for i in liked_ids if str(i).isdigit()]
+
+    if not valid_ids: return jsonify([])
+
+    try:
+        hits = client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=valid_ids,
+            limit=10
+        )
+        return jsonify([hit.payload for hit in hits])
+    except Exception as e:
+        print(f"⚠️ Lỗi Recommend: {e}")
+        return jsonify([])
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    # 🔥 QUAN TRỌNG: Chạy port 5001 để tránh xung đột trên MacOS
+    print("🚀 SERVER ĐANG CHẠY TẠI: http://127.0.0.1:5001")
+    app.run(port=5001, debug=True, use_reloader=False)
