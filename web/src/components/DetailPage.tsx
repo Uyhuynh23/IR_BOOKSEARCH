@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import type { Book } from "../types";
@@ -49,6 +49,7 @@ export default function DetailPage({
   >([]);
   const [googleData, setGoogleData] = useState<GoogleBookDetails | null>(null);
   const [loadingGoogleData, setLoadingGoogleData] = useState(true);
+  const googleDataCacheRef = useRef<Record<string, GoogleBookDetails | null>>({});
 
   const genres = book.google_category
     ? book.google_category
@@ -76,6 +77,11 @@ export default function DetailPage({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Scroll to top when book changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [book.bookID, book.book_id]);
 
   // Track scroll for sticky bar
   useEffect(() => {
@@ -112,16 +118,53 @@ export default function DetailPage({
     setFloatingElements(elements);
   }, []);
 
-  // Fetch Google Books data for additional details
+  // Fetch Google Books data for additional details (with caching and fallback to server data)
   useEffect(() => {
     async function loadGoogleData() {
+      const cacheKey = `${book.clean_isbn}-${book.title}`;
+      
+      // Check if data is already cached
+      if (googleDataCacheRef.current[cacheKey] !== undefined) {
+        setGoogleData(googleDataCacheRef.current[cacheKey]);
+        setLoadingGoogleData(false);
+        return;
+      }
+      
       setLoadingGoogleData(true);
-      const data = await fetchGoogleBookDetails(book.clean_isbn, book.title);
+      
+      // First, check if book already has the necessary data from server
+      const hasDataFromServer = book.num_pages || book.language;
+      
+      if (hasDataFromServer) {
+        // Use data from server if available
+        const serverData: GoogleBookDetails = {
+          pageCount: book.num_pages || 0,
+          language: book.language || "en",
+          ratingsCount: undefined,
+        };
+        googleDataCacheRef.current[cacheKey] = serverData;
+        setGoogleData(serverData);
+        setLoadingGoogleData(false);
+        return;
+      }
+      
+      // If server data is missing, fetch from Google Books API with timeout
+      const timeout = new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), 3000); // 3 second timeout
+      });
+      
+      const data = await Promise.race([
+        fetchGoogleBookDetails(book.clean_isbn, book.title),
+        timeout
+      ]);
+      
+      // Cache the result
+      googleDataCacheRef.current[cacheKey] = data;
       setGoogleData(data);
       setLoadingGoogleData(false);
     }
     loadGoogleData();
-  }, [book.clean_isbn, book.title]);
+  }, [book.clean_isbn, book.title, book.num_pages, book.language, book.description]);
 
   const handleReadingListToggle = () => {
     const newValue = readingList === "favorite" ? "none" : "favorite";

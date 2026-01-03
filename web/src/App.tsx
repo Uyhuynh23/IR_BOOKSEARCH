@@ -14,6 +14,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>("search");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [hasFiltersApplied, setHasFiltersApplied] = useState(false);
+  const [scrollPosition, setScrollPosition] = useState(0);
   const [filters, setFilters] = useState<SearchFilters>({
     genres: [],
     author: "",
@@ -24,9 +26,10 @@ function App() {
   });
 
   const handleSearch = async (searchQuery: string) => {
-    if (!searchQuery.trim()) return;
     setLoading(true);
     setCurrentView("results");
+    setQuery(searchQuery);
+    setScrollPosition(0);
     const results = await searchBooks(searchQuery, filters);
     setBooks(results);
     setLoading(false);
@@ -34,6 +37,10 @@ function App() {
 
   const handleUpdateFilters = (newFilters: Partial<SearchFilters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
+  };
+
+  const handleFiltersApplied = (applied: boolean) => {
+    setHasFiltersApplied(applied);
   };
 
   const handleBackToSearch = () => {
@@ -47,7 +54,9 @@ function App() {
   };
 
   const handleSelectBook = (bookId: number) => {
-    const book = books.find((b) => b.bookID === bookId);
+    // Save scroll position before navigating away from results
+    setScrollPosition(window.scrollY);
+    const book = books.find((b) => (b.bookID || b.book_id) === bookId);
     if (book) {
       setSelectedBook(book);
       setCurrentView("detail");
@@ -56,10 +65,11 @@ function App() {
 
   // Get related books (simple: same category, different book)
   const getRelatedBooks = (book: Book): Book[] => {
+    const currentBookId = book.bookID || book.book_id;
     return books
       .filter(
         (b) =>
-          b.bookID !== book.bookID && b.google_category === book.google_category
+          (b.bookID || b.book_id) !== currentBookId && b.google_category === book.google_category
       )
       .slice(0, 5);
   };
@@ -73,6 +83,8 @@ function App() {
         onChangeQuery={setQuery}
         onUpdateFilters={handleUpdateFilters}
         onSearch={handleSearch}
+        hasFiltersApplied={hasFiltersApplied}
+        onFiltersApplied={handleFiltersApplied}
       />
     );
   }
@@ -133,6 +145,12 @@ function App() {
       onBack={handleBackToSearch}
       onSearchAgain={handleSearch}
       onSelectBook={handleSelectBook}
+      filters={filters}
+      onUpdateFilters={handleUpdateFilters}
+      hasFiltersApplied={hasFiltersApplied}
+      onFiltersApplied={handleFiltersApplied}
+      scrollPosition={scrollPosition}
+      onScrollPositionChange={setScrollPosition}
     />
   );
 }

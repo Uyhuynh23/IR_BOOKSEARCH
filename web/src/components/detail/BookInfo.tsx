@@ -71,10 +71,10 @@ export default function BookInfo({
             style={{
               fontSize: "1.5rem",
               filter:
-                i < Math.floor(book.average_rating)
+                i < Math.floor(book.average_rating || 0)
                   ? "none"
                   : "grayscale(100%)",
-              opacity: i < Math.floor(book.average_rating) ? 1 : 0.3,
+              opacity: i < Math.floor(book.average_rating || 0) ? 1 : 0.3,
             }}
           >
             ⭐
@@ -88,7 +88,7 @@ export default function BookInfo({
             marginLeft: "0.5rem",
           }}
         >
-          {book.average_rating}
+          {(book.average_rating || 0).toFixed(1)}
         </span>
         <span style={{ fontSize: "0.95rem", color: "#6B7280" }}>
           {googleData?.ratingsCount

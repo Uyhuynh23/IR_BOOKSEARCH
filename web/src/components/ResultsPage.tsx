@@ -1,14 +1,16 @@
-import { useState, useEffect } from "react";
-import type { Book } from "../types";
+import { useState, useEffect, useRef } from "react";
+import type { Book, SearchFilters } from "../types";
 import SearchBar from "./SearchBar";
 import BookCard from "./BookCard";
 import FloatingElements from "./results/FloatingElements";
 import ResultsHeader from "./results/ResultsHeader";
 import ActiveFilters from "./results/ActiveFilters";
 import CategorySidebar from "./results/CategorySidebar";
+import AdvancedFilters from "./results/AdvancedFilters";
 import EmptyState from "./results/EmptyState";
 import RelatedSearches from "./results/RelatedSearches";
 import Pagination from "./results/Pagination";
+import { searchBooks } from "../utils/search";
 
 interface ResultsPageProps {
   results: Book[];
@@ -16,6 +18,12 @@ interface ResultsPageProps {
   onBack: () => void;
   onSearchAgain: (query: string) => void;
   onSelectBook?: (bookId: number) => void;
+  filters?: SearchFilters;
+  onUpdateFilters?: (filters: Partial<SearchFilters>) => void;
+  hasFiltersApplied?: boolean;
+  onFiltersApplied?: (applied: boolean) => void;
+  scrollPosition?: number;
+  onScrollPositionChange?: (position: number) => void;
 }
 
 export default function ResultsPage({
@@ -24,6 +32,12 @@ export default function ResultsPage({
   onBack,
   onSearchAgain,
   onSelectBook,
+  filters: globalFilters,
+  onUpdateFilters,
+  hasFiltersApplied: globalHasApplied,
+  onFiltersApplied,
+  scrollPosition = 0,
+  onScrollPositionChange,
 }: ResultsPageProps) {
   const [searchQuery, setSearchQuery] = useState(query);
   const [sortBy, setSortBy] = useState("relevance");
@@ -33,6 +47,19 @@ export default function ResultsPage({
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1200
   );
+  const defaultFilters: SearchFilters = {
+    genres: [],
+    author: "",
+    minRating: 0,
+    yearMin: 1800,
+    yearMax: new Date().getFullYear(),
+    language: "All",
+  };
+  
+  const [advancedFilters, setAdvancedFilters] = useState<SearchFilters>(globalFilters || defaultFilters);
+  const [appliedFilters, setAppliedFilters] = useState<SearchFilters>(globalFilters || defaultFilters);
+  const [hasApplied, setHasApplied] = useState(globalHasApplied || false);
+  const scrollPositionRef = useRef<number>(0);
   const [floatingElements, setFloatingElements] = useState<
     Array<{
       id: number;
@@ -43,6 +70,13 @@ export default function ResultsPage({
     }>
   >([]);
   const booksPerPage = 12;
+
+  // Save scroll position when leaving the page, restore when returning
+  useEffect(() => {
+    // Restore scroll position when component mounts
+    window.scrollTo(0, scrollPosition);
+    scrollPositionRef.current = scrollPosition;
+  }, [scrollPosition]);
 
   // Track window width for responsive behavior
   useEffect(() => {
@@ -87,6 +121,15 @@ export default function ResultsPage({
     new Set(results.map((book) => book.google_category).filter(Boolean))
   ).slice(0, 8);
 
+  // Handle book selection with scroll position tracking
+  const handleSelectBook = (bookId: number) => {
+    // Update parent App with current scroll position
+    if (onScrollPositionChange) {
+      onScrollPositionChange(window.scrollY);
+    }
+    onSelectBook?.(bookId);
+  };
+
   // Filter books by selected categories
   const filteredResults =
     selectedCategories.length > 0
@@ -96,6 +139,23 @@ export default function ResultsPage({
           )
         )
       : results;
+
+  // Sort filtered results based on sortBy
+  const sortedResults = [...filteredResults].sort((a, b) => {
+    switch (sortBy) {
+      case "rating":
+        return (b.average_rating || 0) - (a.average_rating || 0);
+      case "year":
+        const yearA = parseInt(a.published_year || "0");
+        const yearB = parseInt(b.published_year || "0");
+        return yearB - yearA;
+      case "title":
+        return (a.title || "").localeCompare(b.title || "");
+      case "relevance":
+      default:
+        return (b.score || 0) - (a.score || 0);
+    }
+  });
 
   const toggleCategory = (category: string) => {
     setSelectedCategories((prev) =>
@@ -109,6 +169,50 @@ export default function ResultsPage({
   const clearAllFilters = () => {
     setSelectedCategories([]);
     setCurrentPage(1);
+  };
+
+  const handleApplyAdvancedFilters = async () => {
+    if (!searchQuery.trim()) return;
+    
+    try {
+      const filtersToApply = {
+        ...advancedFilters,
+        genres: selectedCategories,
+      };
+      await searchBooks(searchQuery, filtersToApply);
+      // Update results through parent callback
+      onSearchAgain(searchQuery);
+      setAppliedFilters(advancedFilters);
+      setHasApplied(true);
+      if (onUpdateFilters) {
+        onUpdateFilters(advancedFilters);
+      }
+      if (onFiltersApplied) {
+        onFiltersApplied(true);
+      }
+    } catch (error) {
+      console.error("Filter search error:", error);
+    }
+  };
+
+  const handleResetAdvancedFilters = () => {
+    const resetFilters = {
+      genres: [],
+      author: "",
+      minRating: 0,
+      yearMin: 1800,
+      yearMax: new Date().getFullYear(),
+      language: "All",
+    };
+    setAdvancedFilters(resetFilters);
+    setAppliedFilters(resetFilters);
+    setHasApplied(false);
+    if (onUpdateFilters) {
+      onUpdateFilters(resetFilters);
+    }
+    if (onFiltersApplied) {
+      onFiltersApplied(false);
+    }
   };
 
   const handleSearchSubmit = () => {
@@ -138,10 +242,10 @@ export default function ResultsPage({
   ];
 
   // Pagination
-  const totalPages = Math.ceil(filteredResults.length / booksPerPage);
+  const totalPages = Math.ceil(sortedResults.length / booksPerPage);
   const startIndex = (currentPage - 1) * booksPerPage;
   const endIndex = startIndex + booksPerPage;
-  const currentBooks = filteredResults.slice(startIndex, endIndex);
+  const currentBooks = sortedResults.slice(startIndex, endIndex);
 
   return (
     <div
@@ -236,6 +340,15 @@ export default function ResultsPage({
           onClearAll={clearAllFilters}
         />
 
+        <AdvancedFilters
+          filters={advancedFilters}
+          onFiltersChange={setAdvancedFilters}
+          onApply={handleApplyAdvancedFilters}
+          onReset={handleResetAdvancedFilters}
+          appliedFilters={appliedFilters}
+          hasApplied={hasApplied}
+        />
+
         {/* Main Content with Sidebar */}
         <div style={{ display: "flex", gap: "2rem", position: "relative" }}>
           <CategorySidebar
@@ -265,7 +378,7 @@ export default function ResultsPage({
                     book={book}
                     isFavorite={favorites.has(book.bookID)}
                     onToggleFavorite={toggleFavorite}
-                    onSelectBook={onSelectBook}
+                    onSelectBook={handleSelectBook}
                   />
                 ))}
               </div>

@@ -1,28 +1,35 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
-import type { SearchFilters } from "../types";
 import SearchBar from "./SearchBar";
+import AdvancedFilters from "./results/AdvancedFilters";
+import type { SearchFilters } from "../types";
 
 interface SearchPageProps {
   query: string;
-  filters: SearchFilters;
   onChangeQuery: (value: string) => void;
-  onUpdateFilters: (filters: Partial<SearchFilters>) => void;
   onSearch: (query: string) => void;
+  filters: SearchFilters;
+  onUpdateFilters: (filters: SearchFilters) => void;
+  hasFiltersApplied?: boolean;
+  onFiltersApplied?: (applied: boolean) => void;
 }
 
 export default function SearchPage({
   query,
-  filters,
   onChangeQuery,
-  onUpdateFilters,
   onSearch,
+  filters,
+  onUpdateFilters,
+  hasFiltersApplied: globalHasApplied,
+  onFiltersApplied,
 }: SearchPageProps) {
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [petals, setPetals] = useState<
     Array<{ id: number; x: number; delay: number; duration: number }>
   >([]);
+  const [localFilters, setLocalFilters] = useState<SearchFilters>(filters);
+  const [appliedFilters, setAppliedFilters] = useState<SearchFilters>(filters);
+  const [hasApplied, setHasApplied] = useState(globalHasApplied || false);
   const [currentQuote, setCurrentQuote] = useState<{
     text: string;
     author: string;
@@ -105,15 +112,31 @@ export default function SearchPage({
     onChangeQuery(quickQuery);
   };
 
-  const handleClearFilters = () => {
-    onUpdateFilters({
+  const handleApplyFilters = () => {
+    onUpdateFilters(localFilters);
+    setAppliedFilters(localFilters);
+    setHasApplied(true);
+    if (onFiltersApplied) {
+      onFiltersApplied(true);
+    }
+  };
+
+  const handleResetFilters = () => {
+    const resetFilters: SearchFilters = {
       genres: [],
       author: "",
       minRating: 0,
-      yearMin: 1900,
+      yearMin: 1800,
       yearMax: new Date().getFullYear(),
       language: "All",
-    });
+    };
+    setLocalFilters(resetFilters);
+    onUpdateFilters(resetFilters);
+    setAppliedFilters(resetFilters);
+    setHasApplied(false);
+    if (onFiltersApplied) {
+      onFiltersApplied(false);
+    }
   };
 
   const handleFlowerBurst = () => {
@@ -182,22 +205,6 @@ export default function SearchPage({
       startVelocity: 45,
     });
   };
-
-  const genreOptions = [
-    "Fiction",
-    "Non-fiction",
-    "History",
-    "Science",
-    "Children",
-    "Culture",
-  ];
-  const languageOptions = [
-    "All",
-    "Vietnamese",
-    "English",
-    "French",
-    "Japanese",
-  ];
 
   return (
     <div
@@ -439,347 +446,21 @@ export default function SearchPage({
           </motion.div>
         </div>
 
-        {/* Advanced Filter Panel (Collapsible) */}
+        {/* Advanced Filters */}
         <motion.div
-          initial={{ y: 30, opacity: 0 }}
+          initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1.3, ease: "easeOut" }}
-          style={{
-            background: "#fff",
-            borderRadius: "16px",
-            boxShadow: "0 4px 16px rgba(196,30,58,0.08)",
-            marginBottom: "3rem",
-            overflow: "hidden",
-          }}
+          transition={{ duration: 0.6, delay: 1.0, ease: "easeOut" }}
+          style={{ marginBottom: "3rem" }}
         >
-          <button
-            onClick={() => setFiltersExpanded(!filtersExpanded)}
-            style={{
-              width: "100%",
-              background: "transparent",
-              border: "none",
-              padding: "1.25rem 1.5rem",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              cursor: "pointer",
-              transition: "background 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#FFFDF8")}
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "transparent")
-            }
-          >
-            <div
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-            >
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: "1.1rem",
-                  fontWeight: 700,
-                  color: "#2B2B2B",
-                }}
-              >
-                Advanced Search Filters
-              </h3>
-            </div>
-            <span
-              style={{
-                fontSize: "1.25rem",
-                transform: filtersExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                transition: "transform 0.3s",
-              }}
-            >
-              ⌄
-            </span>
-          </button>
-
-          <AnimatePresence>
-            {filtersExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.4, ease: "easeInOut" }}
-                style={{
-                  padding: "0 1.5rem 1.5rem",
-                  overflow: "hidden",
-                }}
-              >
-                {/* Genres */}
-                <div style={{ marginBottom: "1.5rem" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "0.75rem",
-                      color: "#2B2B2B",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    GENRES
-                  </label>
-                  <div
-                    style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
-                  >
-                    {genreOptions.map((genre) => (
-                      <motion.button
-                        key={genre}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          const newGenres = filters.genres.includes(genre)
-                            ? filters.genres.filter((g) => g !== genre)
-                            : [...filters.genres, genre];
-                          onUpdateFilters({ genres: newGenres });
-                        }}
-                        style={{
-                          background: filters.genres.includes(genre)
-                            ? "#C41E3A"
-                            : "#fff",
-                          color: filters.genres.includes(genre)
-                            ? "#fff"
-                            : "#C41E3A",
-                          border: "1.5px solid #C41E3A",
-                          borderRadius: "20px",
-                          padding: "0.4rem 1rem",
-                          fontSize: "0.9rem",
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        {genre}
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Two-column layout for other filters */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                    gap: "1.5rem",
-                  }}
-                >
-                  {/* Author */}
-                  <div>
-                    <label
-                      style={{
-                        display: "block",
-                        fontWeight: 600,
-                        marginBottom: "0.5rem",
-                        color: "#2B2B2B",
-                        fontSize: "0.95rem",
-                      }}
-                    >
-                      Author
-                    </label>
-                    <input
-                      type="text"
-                      value={filters.author}
-                      onChange={(e) =>
-                        onUpdateFilters({ author: e.target.value })
-                      }
-                      placeholder="e.g. Nguyễn Nhật Ánh"
-                      style={{
-                        width: "100%",
-                        margin: 0,
-                      }}
-                    />
-                  </div>
-
-                  {/* Language */}
-                  <div>
-                    <label
-                      style={{
-                        display: "block",
-                        fontWeight: 600,
-                        marginBottom: "0.5rem",
-                        color: "#2B2B2B",
-                        fontSize: "0.95rem",
-                      }}
-                    >
-                      Language
-                    </label>
-                    <select
-                      value={filters.language}
-                      onChange={(e) =>
-                        onUpdateFilters({ language: e.target.value })
-                      }
-                      style={{
-                        width: "100%",
-                        margin: 0,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {languageOptions.map((lang) => (
-                        <option key={lang} value={lang}>
-                          {lang}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Year Range */}
-                <div style={{ marginTop: "1.5rem" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "0.75rem",
-                      color: "#2B2B2B",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    Year Range
-                  </label>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "1rem",
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontSize: "0.85rem",
-                          color: "#6B7280",
-                          marginBottom: "0.25rem",
-                        }}
-                      >
-                        From
-                      </label>
-                      <input
-                        type="number"
-                        min={1900}
-                        max={new Date().getFullYear()}
-                        value={filters.yearMin}
-                        onChange={(e) =>
-                          onUpdateFilters({ yearMin: Number(e.target.value) })
-                        }
-                        placeholder="1900"
-                        style={{
-                          width: "100%",
-                          margin: 0,
-                        }}
-                      />
-                    </div>
-                    <span
-                      style={{
-                        fontSize: "1.2rem",
-                        color: "#C41E3A",
-                        marginTop: "1.5rem",
-                      }}
-                    >
-                      –
-                    </span>
-                    <div style={{ flex: 1 }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontSize: "0.85rem",
-                          color: "#6B7280",
-                          marginBottom: "0.25rem",
-                        }}
-                      >
-                        To
-                      </label>
-                      <input
-                        type="number"
-                        min={1900}
-                        max={new Date().getFullYear()}
-                        value={filters.yearMax}
-                        onChange={(e) =>
-                          onUpdateFilters({ yearMax: Number(e.target.value) })
-                        }
-                        placeholder={String(new Date().getFullYear())}
-                        style={{
-                          width: "100%",
-                          margin: 0,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Minimum Rating */}
-                <div style={{ marginTop: "1.5rem" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontWeight: 600,
-                      marginBottom: "0.5rem",
-                      color: "#2B2B2B",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    Minimum Rating
-                  </label>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "0.5rem",
-                      alignItems: "center",
-                    }}
-                  >
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <motion.button
-                        key={star}
-                        whileHover={{ scale: 1.2, rotate: 15 }}
-                        whileTap={{ scale: 0.9, rotate: -15 }}
-                        onClick={() => onUpdateFilters({ minRating: star })}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          fontSize: "1.5rem",
-                          cursor: "pointer",
-                          filter:
-                            star <= filters.minRating
-                              ? "none"
-                              : "grayscale(100%)",
-                          opacity: star <= filters.minRating ? 1 : 0.3,
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        ⭐
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "1rem",
-                    marginTop: "1.5rem",
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <button
-                    onClick={handleClearFilters}
-                    className="button-outline"
-                    style={{ padding: "0.6rem 1.5rem" }}
-                  >
-                    Clear all filters
-                  </button>
-                  <button
-                    onClick={() => onSearch(query)}
-                    className="button-primary"
-                    style={{ padding: "0.75rem 2rem" }}
-                  >
-                    Apply Filters
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <AdvancedFilters
+            filters={localFilters}
+            onFiltersChange={setLocalFilters}
+            onApply={handleApplyFilters}
+            onReset={handleResetFilters}
+            appliedFilters={appliedFilters}
+            hasApplied={hasApplied}
+          />
         </motion.div>
 
         {/* Decorative Section */}

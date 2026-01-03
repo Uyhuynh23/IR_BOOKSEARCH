@@ -35,12 +35,15 @@ export default function BookCard({
 
   const badge = getCategoryBadge(book.google_category);
 
+  // Handle both bookID and book_id from backend
+  const bookId = book.bookID || book.book_id || 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      onClick={() => onSelectBook?.(book.bookID)}
+      onClick={() => onSelectBook?.(bookId)}
       style={{
         background: "#fff",
         borderRadius: "16px",
@@ -89,7 +92,7 @@ export default function BookCard({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onToggleFavorite(book.bookID);
+            onToggleFavorite(bookId);
           }}
           style={{
             position: "absolute",
@@ -181,10 +184,10 @@ export default function BookCard({
               style={{
                 fontSize: "0.9rem",
                 filter:
-                  i < Math.floor(book.average_rating)
+                  i < Math.floor(book.average_rating || 0)
                     ? "none"
                     : "grayscale(100%)",
-                opacity: i < Math.floor(book.average_rating) ? 1 : 0.3,
+                opacity: i < Math.floor(book.average_rating || 0) ? 1 : 0.3,
               }}
             >
               ⭐
@@ -197,7 +200,7 @@ export default function BookCard({
               marginLeft: "0.25rem",
             }}
           >
-            ({book.average_rating})
+            ({(book.average_rating || 0).toFixed(1)})
           </span>
         </div>
 
@@ -222,7 +225,7 @@ export default function BookCard({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onSelectBook?.(book.bookID);
+            onSelectBook?.(bookId);
           }}
           className="button-outline"
           style={{

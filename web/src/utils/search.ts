@@ -3,12 +3,17 @@ import type { Book, SearchFilters } from '../types';
 
 // Hàm gọi API Python với query và filters
 export const searchBooks = async (query: string, filters?: SearchFilters): Promise<Book[]> => {
-  if (!query) return [];
+  // Allow search with empty query if filters are provided
+  if (!query && (!filters || Object.keys(filters).length === 0)) {
+    return [];
+  }
 
   try {
     // Build URL with query parameters
     const params = new URLSearchParams();
-    params.append('q', query);
+    
+    // Always add query parameter (empty string if not provided)
+    params.append('q', query || '');
     
     // Add filters if provided
     if (filters) {
@@ -32,8 +37,8 @@ export const searchBooks = async (query: string, filters?: SearchFilters): Promi
       }
     }
     
-    // Gọi sang Server Python đang chạy ở port 5000
-    const response = await fetch(`http://127.0.0.1:5000/search?${params.toString()}`);
+    // Gọi sang Server Python đang chạy ở port 5001
+    const response = await fetch(`http://127.0.0.1:5001/search?${params.toString()}`);
     
     if (!response.ok) {
       throw new Error('Lỗi kết nối tới Server!');
